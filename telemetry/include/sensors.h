@@ -2,32 +2,35 @@
 #ifndef SENSOR_HPP
 #define SENSOR_HPP
 
-#include <Arduino.h>
+#define VIEWER_SERIAL Serial5
 
-#define AFR_POS_PIN A2
-#define AFR_NEG_PIN A3
-#define RPM_PIN A4
-#define TPS_PIN 33
-#define IPS_PIN 32
+#define AFR_POS_PIN A0
+#define AFR_NEG_PIN A1
+#define RPM_PIN A2
+#define TPS_PIN A3
 
-String readSensors() {
+void initSensors()
+{
+    pinMode(AFR_POS_PIN, INPUT);
+    pinMode(AFR_NEG_PIN, INPUT);
+    pinMode(RPM_PIN, INPUT);
+    pinMode(TPS_PIN, INPUT);
+}
 
+String readSensors()
+{
     String sensorData;
 
     // AFR
     sensorData += analogRead(AFR_POS_PIN) - analogRead(AFR_NEG_PIN);
     sensorData += ',';
-    
+
     // RPM
     sensorData += analogRead(RPM_PIN);
     sensorData += ',';
-    
+
     // TPS
     sensorData += analogRead(TPS_PIN);
-    sensorData += ',';
-    
-    // IPS
-    sensorData += analogRead(IPS_PIN);
 
     return sensorData;
 }

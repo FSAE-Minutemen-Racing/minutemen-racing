@@ -4,9 +4,7 @@
 
 #include <TinyGPSPlus.h>
 
-#define GPS_SERIAL Serial1
-
-static const uint32_t GPSBaud = 115200;
+#define GPS_SERIAL Serial2
 
 TinyGPSPlus gps;
 
@@ -25,9 +23,10 @@ String getGPSData()
             }
             else
             {
-                return F("INVALID");
+                return "INVALID,INVALID";
             }
         }
+    return "NO GPS,NO GPS";
 }
 
 #endif
