@@ -1,0 +1,39 @@
+#include <Arduino.h>
+#include <FreqCount.h>
+
+void setup()
+{
+  Serial.begin(115200);
+  FreqCount.begin(195);
+}
+
+void loop()
+{
+  if (Serial.available() > 0)
+  {
+
+    if ('d' == Serial.read())
+    {
+      // RPM
+      if (FreqCount.available())
+      {
+        Serial.print(FreqCount.read());
+      }
+      else
+      {
+        Serial.print(0);
+      }
+      Serial.print(",");
+
+      // AFR
+      Serial.print(analogRead(A0));
+      Serial.print(",");
+
+      // MAP
+      Serial.print(analogRead(A1));
+      Serial.print(",");
+
+      Serial.println(analogRead(A2));
+    }
+  }
+}

@@ -1,36 +1,146 @@
 #include <Arduino.h>
+#include <WiFiS3.h>
+#include <Arduino_LED_Matrix.h>
+#include <TinyGPSPlus.h>
 
-#include "kline.h"
-#include "gps.h"
-#include "sensors.h"
+const char ssid[] = "minutemen-racing";
+const char pass[] = "password";
+WiFiServer server(80);
+
+const byte inputPin = 5;
+volatile unsigned long pulseCount = 0;
+
+enum Sensors
+{
+    RPM, // Revolutions Per Minute
+    AFR, // Air Fuel Ratio
+    TPS, // Throttle Position Sensor
+    MAP  // Manifold Absolute Pressure
+};
+
+ArduinoLEDMatrix matrix;
+const uint32_t logo[] = {
+		0x6d8ffc6d,
+		0xe6db6d92,
+		0xdb05a009
+};
 
 void setup()
 {
-  Serial.begin(115200);
-  K_LINE_SERIAL.begin(15800, SERIAL_8N1);
-  GPS_SERIAL.begin(115200);
-  VIEWER_SERIAL.begin(115200);
+    Serial.begin(9600);
 
-  // Start sensor pins
-  initSensors();
+    // matrix.begin();
+    // matrix.loadFrame(logo);
 
-  // Initialize the K-line communication protocol
-  initKLine();
+    WiFi.beginAP(ssid, pass);
+    server.begin();
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP());
 
-  // Enter Diagnostic Mode
-  // enterDiagMode();
+    pinMode(inputPin, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(inputPin), pulseISR, RISING);
 }
 
 void loop()
 {
-  if (VIEWER_SERIAL.available() > 0) {
+    WiFiClient client = server.available();
+    if (client)
+    {
+        String request = "";
+        while (client.connected())
+        {
+            if (client.available())
+            {
+                char c = client.read();
+                request += c;
+                if (c == '\n')
+                {
+                    if (request.indexOf("GET /data") >= 0)
+                    {
+                        client.println("HTTP/1.1 200 OK");
+                        client.println("Content-type:text/plain");
+                        client.println("Access-Control-Allow-Origin: *");
+                        client.println("Connection: close");
+                        client.println();
 
-    char command = VIEWER_SERIAL.read();
-   
-    if (command == 'd') {
-      VIEWER_SERIAL.print(readSensors());
-      VIEWER_SERIAL.print(",");
-      VIEWER_SERIAL.print(getGPSData());
+                        client.print(readSensors(RPM));
+                        client.print(",");
+                        client.print(readSensors(AFR));
+                        client.print(",");
+                        client.print(readSensors(TPS));
+                        client.print(",");
+                        client.print(readSensors(MAP));
+                        client.print(",0,0");
+
+                        Serial.println("Client served");
+                        break;
+                    }
+                }
+            }
+        }
+        client.stop();
     }
-  }
+}
+
+void pulseISR()
+{
+    pulseCount++;
+}
+
+unsigned long measureFrequency(int windowMs)
+{
+    pulseCount = 0;
+    unsigned long startTime = millis();
+    delay(windowMs);
+    unsigned long endTime = millis();
+
+    float gateTime = (endTime - startTime) / 1000.0;
+    unsigned long frequency = pulseCount / gateTime;
+
+    return frequency;
+}
+
+int readSensors(int sensor)
+{
+    switch (sensor)
+    {
+    case RPM:
+        return measureFrequency(100);
+
+    case AFR:
+        return analogRead(A0);
+
+    case TPS:
+        return analogRead(A1);
+
+    case MAP:
+        return analogRead(A2);
+
+    default:
+        return -1;
+    }
+}
+
+#define GPS_SERIAL Serial1
+TinyGPSPlus gps;
+
+String getGPSData()
+{
+    while (GPS_SERIAL.available() > 0)
+        if (gps.encode(GPS_SERIAL.read()))
+        {
+            if (gps.location.isValid())
+            {
+                String output;
+                output += String(gps.location.lat(), 6);
+                output += ",";
+                output += String(gps.location.lng(), 6);
+                return output;
+            }
+            else
+            {
+                return "INVALID,INVALID";
+            }
+        }
+    return "NO GPS,NO GPS";
 }
