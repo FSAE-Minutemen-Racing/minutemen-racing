@@ -1,0 +1,5 @@
+telemetry/.pio
+telemetry/.vscode/.browse.c_cpp.db*
+telemetry/.vscode/c_cpp_properties.json
+telemetry/.vscode/launch.json
+telemetry/.vscode/ipch

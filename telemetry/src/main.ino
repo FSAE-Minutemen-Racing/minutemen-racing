@@ -1,13 +1,13 @@
 #include <Arduino.h>
 #include <WiFiS3.h>
 #include <Arduino_LED_Matrix.h>
-#include <TinyGPSPlus.h>
+#include "gps.hpp"
 
 const char ssid[] = "minutemen-racing";
 const char pass[] = "password";
 WiFiServer server(80);
 
-const byte inputPin = 5;
+const byte inputPin = 2;
 volatile unsigned long pulseCount = 0;
 
 enum Sensors
@@ -29,8 +29,8 @@ void setup()
 {
     Serial.begin(9600);
 
-    // matrix.begin();
-    // matrix.loadFrame(logo);
+    matrix.begin();
+    matrix.loadFrame(logo);
 
     WiFi.beginAP(ssid, pass);
     server.begin();
@@ -38,7 +38,7 @@ void setup()
     Serial.println(WiFi.localIP());
 
     pinMode(inputPin, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(inputPin), pulseISR, RISING);
+    attachInterrupt(digitalPinToInterrupt(inputPin), pulseISR, FALLING);
 }
 
 void loop()
@@ -119,28 +119,4 @@ int readSensors(int sensor)
     default:
         return -1;
     }
-}
-
-#define GPS_SERIAL Serial1
-TinyGPSPlus gps;
-
-String getGPSData()
-{
-    while (GPS_SERIAL.available() > 0)
-        if (gps.encode(GPS_SERIAL.read()))
-        {
-            if (gps.location.isValid())
-            {
-                String output;
-                output += String(gps.location.lat(), 6);
-                output += ",";
-                output += String(gps.location.lng(), 6);
-                return output;
-            }
-            else
-            {
-                return "INVALID,INVALID";
-            }
-        }
-    return "NO GPS,NO GPS";
 }

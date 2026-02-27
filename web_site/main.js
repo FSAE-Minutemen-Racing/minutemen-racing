@@ -124,7 +124,7 @@ const updateGaugeElement = (gaugeElement, value, gaugeNumber) => {
             break;
 
         case 3: // MAP
-            const mapMax = 250;
+            const mapMax = 1023;
             const mapValue = Math.max(0, Math.min(mapMax, value));
             gaugeValueSpan = gaugeElement.querySelector('.gauge-value');
             let mapPercent = Math.max(0, Math.min(100, (mapValue / mapMax) * 100));
