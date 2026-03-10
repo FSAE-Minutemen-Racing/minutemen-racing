@@ -10,6 +10,9 @@ WiFiServer server(80);
 const byte inputPin = 2;
 volatile unsigned long pulseCount = 0;
 
+
+char buffer[20];
+
 enum Sensors
 {
     RPM, // Revolutions Per Minute
@@ -43,43 +46,25 @@ void setup()
 
 void loop()
 {
-    WiFiClient client = server.available();
-    if (client)
-    {
-        String request = "";
-        while (client.connected())
-        {
-            if (client.available())
-            {
-                char c = client.read();
-                request += c;
-                if (c == '\n')
-                {
-                    if (request.indexOf("GET /data") >= 0)
-                    {
-                        client.println("HTTP/1.1 200 OK");
-                        client.println("Content-type:text/plain");
-                        client.println("Access-Control-Allow-Origin: *");
-                        client.println("Connection: close");
-                        client.println();
 
-                        client.print(readSensors(RPM));
-                        client.print(",");
-                        client.print(readSensors(AFR));
-                        client.print(",");
-                        client.print(readSensors(TPS));
-                        client.print(",");
-                        client.print(readSensors(MAP));
-                        client.print(",0,0");
+    
+    Serial.write('R');
+    Serial.println(readSensors(RPM));
+    delay(10);
 
-                        Serial.println("Client served");
-                        break;
-                    }
-                }
-            }
-        }
-        client.stop();
-    }
+    Serial.write('M');
+    Serial.println(readSensors(MAP));
+    delay(10);
+
+    Serial.write('T');
+    Serial.println(readSensors(TPS));
+    delay(10);
+
+    Serial.write('A');
+    Serial.println(readSensors(AFR));
+    delay(10);
+
+
 }
 
 void pulseISR()
