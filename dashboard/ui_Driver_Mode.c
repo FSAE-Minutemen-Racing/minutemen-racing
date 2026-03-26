@@ -36,13 +36,13 @@ lv_obj_t * ui_Label2 = NULL;
 lv_obj_t * ui_Label5 = NULL;
 lv_obj_t * ui_Label6 = NULL;
 lv_obj_t * ui_gpscontainer = NULL;
-lv_obj_t * ui_maplabel = NULL;
-lv_obj_t * ui_map = NULL;
+lv_obj_t * ui_tpslabel = NULL;
+lv_obj_t * ui_tps = NULL;
 lv_obj_t * ui_gforcelabel = NULL;
 lv_obj_t * ui_gforce = NULL;
 lv_obj_t * ui_gpslabel = NULL;
 lv_obj_t * ui_gps = NULL;
-lv_obj_t * ui_voltslabel = NULL;
+lv_obj_t * ui_voltlabel = NULL;
 lv_obj_t * ui_volts = NULL;
 lv_obj_t * ui_engrbutton = NULL;
 // event funtions
@@ -118,7 +118,7 @@ void ui_Driver_Mode_screen_init(void)
     lv_obj_set_width(ui_rpm, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_rpm, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_align(ui_rpm, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_rpm, "0");
+    lv_label_set_text(ui_rpm, "16000");
     lv_obj_set_style_text_color(ui_rpm, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_rpm, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_rpm, &lv_font_montserrat_48, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -259,7 +259,7 @@ void ui_Driver_Mode_screen_init(void)
     lv_obj_set_width(ui_speed, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_speed, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_align(ui_speed, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_speed, "0");
+    lv_label_set_text(ui_speed, "100");
     lv_obj_set_style_text_color(ui_speed, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_speed, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_speed, &lv_font_montserrat_48, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -337,6 +337,7 @@ void ui_Driver_Mode_screen_init(void)
     lv_obj_set_x(ui_laptimer, -4);
     lv_obj_set_y(ui_laptimer, 0);
     lv_obj_set_align(ui_laptimer, LV_ALIGN_CENTER);
+    lv_label_set_long_mode(ui_laptimer, LV_LABEL_LONG_CLIP);
     lv_label_set_text(ui_laptimer, "+00:00:00");
     lv_obj_set_style_text_color(ui_laptimer, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_laptimer, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -360,7 +361,7 @@ void ui_Driver_Mode_screen_init(void)
     lv_obj_set_x(ui_coolant, 0);
     lv_obj_set_y(ui_coolant, -2);
     lv_obj_set_align(ui_coolant, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_coolant, "Lo");
+    lv_label_set_text(ui_coolant, "100");
     lv_obj_set_style_text_color(ui_coolant, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_coolant, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_coolant, &lv_font_montserrat_36, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -422,27 +423,27 @@ void ui_Driver_Mode_screen_init(void)
     lv_obj_set_style_border_opa(ui_gpscontainer, 255, LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
     lv_obj_set_style_border_width(ui_gpscontainer, 5, LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
 
-    ui_maplabel = lv_label_create(ui_Driver_Mode);
-    lv_obj_set_width(ui_maplabel, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_maplabel, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_maplabel, -300);
-    lv_obj_set_y(ui_maplabel, 135);
-    lv_obj_set_align(ui_maplabel, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_maplabel, "MAP");
-    lv_obj_set_style_text_color(ui_maplabel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_maplabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_maplabel, &lv_font_montserrat_24, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_tpslabel = lv_label_create(ui_Driver_Mode);
+    lv_obj_set_width(ui_tpslabel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_tpslabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_tpslabel, 300);
+    lv_obj_set_y(ui_tpslabel, 135);
+    lv_obj_set_align(ui_tpslabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_tpslabel, "TPS");
+    lv_obj_set_style_text_color(ui_tpslabel, lv_color_hex(0xF000FF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_tpslabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_tpslabel, &lv_font_montserrat_24, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_map = lv_label_create(ui_Driver_Mode);
-    lv_obj_set_width(ui_map, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_map, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_map, -300);
-    lv_obj_set_y(ui_map, 177);
-    lv_obj_set_align(ui_map, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_map, "0");
-    lv_obj_set_style_text_color(ui_map, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_map, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_map, &lv_font_montserrat_36, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_tps = lv_label_create(ui_Driver_Mode);
+    lv_obj_set_width(ui_tps, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_tps, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_tps, 300);
+    lv_obj_set_y(ui_tps, 180);
+    lv_obj_set_align(ui_tps, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_tps, "100");
+    lv_obj_set_style_text_color(ui_tps, lv_color_hex(0xF000FF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_tps, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_tps, &lv_font_montserrat_36, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_gforcelabel = lv_label_create(ui_Driver_Mode);
     lv_obj_set_width(ui_gforcelabel, LV_SIZE_CONTENT);   /// 1
@@ -461,7 +462,7 @@ void ui_Driver_Mode_screen_init(void)
     lv_obj_set_x(ui_gforce, -100);
     lv_obj_set_y(ui_gforce, 180);
     lv_obj_set_align(ui_gforce, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_gforce, "0");
+    lv_label_set_text(ui_gforce, "100");
     lv_obj_set_style_text_color(ui_gforce, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_gforce, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_gforce, &lv_font_montserrat_36, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -483,37 +484,37 @@ void ui_Driver_Mode_screen_init(void)
     lv_obj_set_x(ui_gps, 100);
     lv_obj_set_y(ui_gps, 180);
     lv_obj_set_align(ui_gps, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_gps, "0");
+    lv_label_set_text(ui_gps, "100");
     lv_obj_set_style_text_color(ui_gps, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_gps, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_gps, &lv_font_montserrat_36, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_voltslabel = lv_label_create(ui_Driver_Mode);
-    lv_obj_set_width(ui_voltslabel, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_voltslabel, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_voltslabel, 300);
-    lv_obj_set_y(ui_voltslabel, 135);
-    lv_obj_set_align(ui_voltslabel, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_voltslabel, "VOLTS");
-    lv_obj_set_style_text_color(ui_voltslabel, lv_color_hex(0xF000FF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_voltslabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_voltslabel, &lv_font_montserrat_24, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_voltlabel = lv_label_create(ui_Driver_Mode);
+    lv_obj_set_width(ui_voltlabel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_voltlabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_voltlabel, -300);
+    lv_obj_set_y(ui_voltlabel, 135);
+    lv_obj_set_align(ui_voltlabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_voltlabel, "VOLTS");
+    lv_obj_set_style_text_color(ui_voltlabel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_voltlabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_voltlabel, &lv_font_montserrat_24, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_volts = lv_label_create(ui_Driver_Mode);
     lv_obj_set_width(ui_volts, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_volts, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_volts, 300);
-    lv_obj_set_y(ui_volts, 180);
+    lv_obj_set_x(ui_volts, -300);
+    lv_obj_set_y(ui_volts, 177);
     lv_obj_set_align(ui_volts, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_volts, "0");
-    lv_obj_set_style_text_color(ui_volts, lv_color_hex(0xF000FF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_label_set_text(ui_volts, "12.00");
+    lv_obj_set_style_text_color(ui_volts, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_volts, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_volts, &lv_font_montserrat_36, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_engrbutton = lv_btn_create(ui_Driver_Mode);
     lv_obj_set_width(ui_engrbutton, 800);
     lv_obj_set_height(ui_engrbutton, 114);
-    lv_obj_set_x(ui_engrbutton, 0);
+    lv_obj_set_x(ui_engrbutton, 1);
     lv_obj_set_y(ui_engrbutton, 161);
     lv_obj_set_align(ui_engrbutton, LV_ALIGN_CENTER);
     lv_obj_add_flag(ui_engrbutton, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
@@ -563,13 +564,13 @@ void ui_Driver_Mode_screen_destroy(void)
     ui_Label5 = NULL;
     ui_Label6 = NULL;
     ui_gpscontainer = NULL;
-    ui_maplabel = NULL;
-    ui_map = NULL;
+    ui_tpslabel = NULL;
+    ui_tps = NULL;
     ui_gforcelabel = NULL;
     ui_gforce = NULL;
     ui_gpslabel = NULL;
     ui_gps = NULL;
-    ui_voltslabel = NULL;
+    ui_voltlabel = NULL;
     ui_volts = NULL;
     ui_engrbutton = NULL;
 
