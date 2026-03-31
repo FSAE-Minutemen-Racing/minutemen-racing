@@ -2,8 +2,10 @@
 #ifndef SENSORS_HPP
 #define SENSORS_HPP
 
-const byte inputPin = 2;
-volatile unsigned long pulseCount = 0;
+const byte rpmPin = 2;
+volatile unsigned long lastPulseTime = 0;
+volatile unsigned long pulseInterval = 0;
+volatile bool newPulse = false;
 
 enum Sensors
 {
@@ -13,22 +15,41 @@ enum Sensors
     MAP  // Manifold Absolute Pressure
 };
 
-void pulseISR()
+void handlePulse()
 {
-    pulseCount++;
+    unsigned long now = micros();
+    pulseInterval = now - lastPulseTime;
+    lastPulseTime = now;
+    newPulse = true;
 }
 
-unsigned long measureFrequency(int windowMs)
+void initSensors()
 {
-    pulseCount = 0;
-    unsigned long startTime = millis();
-    delay(windowMs);
-    unsigned long endTime = millis();
+    pinMode(rpmPin, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(rpmPin), handlePulse, FALLING);
+}
 
-    float gateTime = (endTime - startTime) / 1000.0;
-    unsigned long frequency = pulseCount / gateTime;
+float measureRPM()
+{
+    if (newPulse)
+    {
+        // Disable interrupts briefly to read volatile variables safely
+        noInterrupts();
+        unsigned long interval = pulseInterval;
+        newPulse = false;
+        interrupts();
 
-    return frequency;
+        // Calculate RPM: (1,000,000 micros / interval) * 60 seconds
+        // Note: If your sensor gives 2 pulses per revolution, divide by 2
+        float rpm = (60000000.0 / interval);
+        return rpm;
+    }
+
+    // Timeout: If no pulse for 2 seconds, assume 0 RPM
+    if (micros() - lastPulseTime > 2000000)
+    {
+        return 0.0F;
+    }
 }
 
 int readSensors(int sensor)
@@ -36,7 +57,7 @@ int readSensors(int sensor)
     switch (sensor)
     {
     case RPM:
-        return measureFrequency(100);
+        return measureRPM();
 
     case AFR:
         return analogRead(A0);
@@ -50,11 +71,6 @@ int readSensors(int sensor)
     default:
         return -1;
     }
-}
-
-void initSensors() {
-    pinMode(inputPin, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(inputPin), pulseISR, FALLING);
 }
 
 #endif

@@ -26,17 +26,12 @@ extern "C" {
 #include "ui_events.h"
 
 ///////////////////// SCREENS ////////////////////
-#include "ui_Start_Mode.h"
 #include "ui_Driver_Mode.h"
-#include "ui_Engineer_Mode.h"
 
 ///////////////////// VARIABLES ////////////////////
 
 // EVENTS
 extern lv_obj_t * ui____initial_actions0;
-
-// IMAGES AND IMAGE SETS
-LV_IMG_DECLARE(ui_img_mmr_black_small_png);    // assets/mmr_black_small.png
 
 // FONTS
 LV_FONT_DECLARE(ui_font_GEAR_FONT);

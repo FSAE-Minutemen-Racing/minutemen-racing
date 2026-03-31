@@ -2,64 +2,101 @@
 #ifndef SCREEN_CONTROL_HPP
 #define SCREEN_CONTROL_HPP
 
-int current_screen = 1;
-bool engine_running = false;
-
-int laptimer = 0;
-int starttime = 0;
-
-void updateCarState()
+void neutralSwitch()
 {
-    if (readSensors(MAP) < 20 and current_screen != 1)
-    {
-        current_screen = 1;
-        Serial1.println('1');
-    }
-
-    else if (readSensors(MAP) >= 20 and current_screen != 2)
-    {
-        current_screen = 2;
-        Serial1.println('2');
-    }
-
-    if (readSensors(RPM) >= 10 and engine_running != true)
-    {
-        laptimer = 0;
-        engine_running = true;
-    }
-
-    else if (readSensors(RPM) < 10)
-    {
-        engine_running = false;
-    }
+    Serial1.print('G');
+    Serial1.println('N');
 }
 
-void updateDashboard()
+void updateGear(int gear)
 {
+    Serial1.print('G');
+    Serial1.println(gear);
+}
+
+void updateGauges()
+{
+    // Upper Gauges
     Serial1.print('R');
     Serial1.println(5 * readSensors(RPM));
 
+    Serial1.print('S');
+    Serial1.println(0);
+
+    Serial1.print('C');
+    Serial1.println(0);
+
+    // Lower Gauges
+    Serial1.print('V');
+    Serial1.println(0);
+
+    Serial1.print('F');
+    Serial1.println(0);
+
+    Serial1.print('N');
+    Serial1.println(0);
+
     Serial1.print("T");
-    Serial1.println(max(0, min(100, (int)((readSensors(TPS) - 130) * 100) / (865 - 120))));
+    Serial1.println(max(0, min(100, (int)((readSensors(TPS) - 140) * 100) / (860 - 140))));
+}
 
-    if (engine_running == true)
+int laptimer = 0;
+
+void incrementLaptimer()
+{
+    laptimer++;
+
+    int seconds = laptimer % 60;
+    int minutes = (laptimer / 60) % 60;
+    int hours = (laptimer / 3600) % 24;
+
+    char laptimerString[8];
+    sprintf(laptimerString, "%02d:%02d:%02d", hours, minutes, seconds);
+
+    Serial1.print('L');
+    Serial1.println(laptimerString);
+}
+
+enum Warnings
+{
+    KILL,
+    HEAT,
+    STALL,
+    BATT
+};
+
+void warning_lights(int warning, bool state)
+{
+    switch (warning)
     {
-        if (millis() - starttime >= 1000)
-        {
-            starttime = millis();
 
-            laptimer++;
-            int hours = laptimer / 3600;
-            int minutes = (laptimer % 3600) / 60;
-            int seconds = laptimer % 60;
+    case KILL:
+        if (state)
+            Serial1.println('K');
+        else
+            Serial1.println('k');
+        break;
 
-            Serial1.print('L');
-            Serial1.print(hours);
-            Serial1.print(':');
-            Serial1.print(minutes);
-            Serial1.print(':');
-            Serial1.println(seconds);
-        }
+    case HEAT:
+        if (state)
+            Serial1.println('H');
+        else
+            Serial1.println('h');
+        break;
+
+    case STALL:
+        if (state)
+            Serial1.println('X');
+        else
+            Serial1.println('x');
+        break;
+
+    case BATT:
+        if (state)
+            Serial1.println('B');
+        else
+            Serial1.println('b');
+        break;
     }
 }
 

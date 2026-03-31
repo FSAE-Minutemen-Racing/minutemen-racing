@@ -1,39 +1,32 @@
 #include <Arduino.h>
-#include <Arduino_LED_Matrix.h>
+#include <elapsedMillis.h>
 #include "sensors.hpp"
-#include "kline.h"
-#include "server.hpp"
 #include "screen_control.hpp"
+#include "server.hpp"
 
-ArduinoLEDMatrix matrix;
-const uint32_t logo[] = {
-		0x6d8ffc6d,
-		0xe6db6d92,
-		0xdb05a009
-};
+elapsedMillis updateGauges_timer;
+elapsedMillis incrementLaptimer_timer;
 
 void setup()
 {
     Serial1.begin(9600);
 
-    // matrix.begin();
-    // matrix.loadFrame(logo);
-
-    initServer();
-
     initSensors();
-
-    // Clear warning lights
-    Serial1.println('k');
-    Serial1.println('b');
-    Serial1.println('x');
-    Serial1.println('h');
+    initServer();
 }
 
 void loop()
 {
-    updateCarState();
-    updateDashboard();
+
+    if (updateGauges_timer >= 100) {
+        updateGauges();
+        updateGauges_timer = 0;
+    }
+
+    if (incrementLaptimer_timer >= 1000) {
+        incrementLaptimer();
+        incrementLaptimer_timer = 0;
+    }
 
     runServer();
 }

@@ -51,88 +51,94 @@ void setup()
 void loop()
 {
     if (Serial.available()) {
-
         char command = Serial.read();
         String value = Serial.readStringUntil('\n');
+        value.trim();
+
+        lvgl_port_lock(-1);
 
         switch (command) {
-            // Screen changes
-            case '1':
-                _ui_screen_change(&ui_Start_Mode, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 500, 0, &ui_Start_Mode_screen_init);
-                break;
-            case '2':
-                _ui_screen_change(&ui_Driver_Mode, LV_SCR_LOAD_ANIM_MOVE_LEFT, 500, 0, &ui_Driver_Mode_screen_init);
-                break;
-            case '3':
-                _ui_screen_change(&ui_Engineer_Mode, LV_SCR_LOAD_ANIM_MOVE_LEFT, 500, 0, &ui_Engineer_Mode_screen_init);
+            // Gear
+            case 'G':
+                lv_label_set_text(ui_gear, value.c_str());
                 break;
 
-            // Gauges
-            case 'G':
-                lv_label_set_text_fmt(ui_gear, value.c_str());
-                break;
-            case 'R': {
-                lv_label_set_text_fmt(ui_rpm, value.c_str());
-                lv_slider_set_value(ui_rpmbar, (value.toInt() * 100) / 16000, LV_ANIM_ON);
-                lv_event_send(ui_rpmbar, LV_EVENT_VALUE_CHANGED, NULL);
-                break;
-            }
-            case 'S':
-                lv_label_set_text_fmt(ui_speed, value.c_str());
-                break;
-            case 'C':
-                lv_label_set_text_fmt(ui_coolant, value.c_str());
-                break;
+            // Laptimer
             case 'L':
                 lv_label_set_text(ui_laptimer, value.c_str());
                 break;
 
-            // Warning Lights
+            // Upper Gauges
+            case 'R': {
+                lv_label_set_text(ui_rpm, value.c_str());
+                int rpm_val = value.toInt();
+                lv_slider_set_value(ui_rpmbar, (rpm_val * 100) / 16000, LV_ANIM_ON);
+                lv_event_send(ui_rpmbar, LV_EVENT_VALUE_CHANGED, NULL);
+                break;
+            }
+
+            case 'S':
+                lv_label_set_text(ui_speed, value.c_str());
+                break;
+
+            case 'C':
+                lv_label_set_text(ui_coolant, value.c_str());
+                break;
+
+            // Lower Gauges
+            case 'V':
+                lv_label_set_text(ui_volts, value.c_str());
+                break;
+
+            case 'F':
+                lv_label_set_text(ui_gforce, value.c_str());
+                break;
+
+            case 'N':
+                lv_label_set_text(ui_gps, value.c_str());
+                break;
+
+            case 'T': {
+                lv_label_set_text(ui_tps, value.c_str());
+                float tps_val = value.toFloat();
+                lv_slider_set_value(ui_tpsbar, (int)((tps_val - 0) * 100) / (100 - 0), LV_ANIM_ON);
+                lv_event_send(ui_tpsbar, LV_EVENT_VALUE_CHANGED, NULL);
+                break;
+            }
+
+            // Warning Lights (off/on)
             case 'k':
                 lv_obj_set_style_bg_color(ui_kill, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
                 break;
             case 'K':
                 lv_obj_set_style_bg_color(ui_kill, lv_color_hex(0xFF0000), LV_PART_MAIN | LV_STATE_DEFAULT);
                 break;
+
             case 'b':
                 lv_obj_set_style_bg_color(ui_batt, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
                 break;
             case 'B':
-                lv_obj_set_style_bg_color(ui_batt, lv_color_hex(0xFF0000), LV_PART_MAIN | LV_STATE_DEFAULT);
+                lv_obj_set_style_bg_color(ui_batt, lv_color_hex(0xFF8A00), LV_PART_MAIN | LV_STATE_DEFAULT);
                 break;
+
             case 'x':
-                lv_obj_set_style_bg_color(ui_stall, lv_color_hex(0x00000), LV_PART_MAIN | LV_STATE_DEFAULT);
+                lv_obj_set_style_bg_color(ui_stall, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
                 break;
             case 'X':
-                lv_obj_set_style_bg_color(ui_stall, lv_color_hex(0xFF8A00), LV_PART_MAIN | LV_STATE_DEFAULT);
+                lv_obj_set_style_bg_color(ui_stall, lv_color_hex(0xFF0000), LV_PART_MAIN | LV_STATE_DEFAULT);
                 break;
+
             case 'h':
-                lv_obj_set_style_bg_color(ui_heat, lv_color_hex(0x00000), LV_PART_MAIN | LV_STATE_DEFAULT);
+                lv_obj_set_style_bg_color(ui_heat, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
                 break;
             case 'H':
                 lv_obj_set_style_bg_color(ui_heat, lv_color_hex(0xFF8A00), LV_PART_MAIN | LV_STATE_DEFAULT);
                 break;
 
-            // Sensors
-            case 'V':
-                lv_label_set_text_fmt(ui_volts, value.c_str());
-                break;
-            case 'F':
-                lv_label_set_text_fmt(ui_gforce, value.c_str());
-                break;
-            case 'g':
-                lv_label_set_text_fmt(ui_gps, value.c_str());
-                break;
-            case 'T': {
-                lv_label_set_text(ui_tps, value.c_str());
-                lv_slider_set_value(ui_battbar, (int)((value.toFloat() - 0) * 100) / (100 - 0), LV_ANIM_ON);
-                lv_event_send(ui_battbar, LV_EVENT_VALUE_CHANGED, NULL);
-                break;
-            }
-
             default:
-                // Handle unknown command if needed.  Could be a log message or error handling.
                 break;
-            }
+        }
+
+        lvgl_port_unlock();
     }
 }

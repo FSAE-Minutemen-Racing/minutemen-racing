@@ -15,7 +15,7 @@ extern void ui_Driver_Mode_screen_init(void);
 extern void ui_Driver_Mode_screen_destroy(void);
 extern lv_obj_t * ui_Driver_Mode;
 extern lv_obj_t * ui_rpmbar;
-extern lv_obj_t * ui_battbar;
+extern lv_obj_t * ui_tpsbar;
 extern lv_obj_t * ui_rpmcontainer;
 extern lv_obj_t * ui_rpm;
 extern lv_obj_t * ui_Label13;
@@ -43,7 +43,6 @@ extern lv_obj_t * ui_Label1;
 extern lv_obj_t * ui_Label2;
 extern lv_obj_t * ui_Label5;
 extern lv_obj_t * ui_Label6;
-extern lv_obj_t * ui_gpscontainer;
 extern lv_obj_t * ui_tpslabel;
 extern lv_obj_t * ui_tps;
 extern lv_obj_t * ui_gforcelabel;
@@ -52,8 +51,6 @@ extern lv_obj_t * ui_gpslabel;
 extern lv_obj_t * ui_gps;
 extern lv_obj_t * ui_voltlabel;
 extern lv_obj_t * ui_volts;
-extern void ui_event_engrbutton(lv_event_t * e);
-extern lv_obj_t * ui_engrbutton;
 // CUSTOM VARIABLES
 
 #ifdef __cplusplus

@@ -10,9 +10,6 @@
 extern "C" {
 #endif
 
-void startLogging(lv_event_t * e);
-void stopLogging(lv_event_t * e);
-
 #ifdef __cplusplus
 } /*extern "C"*/
 #endif
