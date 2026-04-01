@@ -2,7 +2,7 @@
 #ifndef KLINE_HPP
 #define KLINE_HPP
 
-#define K_LINE_SERIAL Serial1
+#define K_LINE_SERIAL Serial
 
 byte buffer[64];
 

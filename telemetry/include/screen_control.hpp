@@ -2,48 +2,31 @@
 #ifndef SCREEN_CONTROL_HPP
 #define SCREEN_CONTROL_HPP
 
-void neutralSwitch()
+void updateDashboard()
 {
-    Serial1.print('G');
-    Serial1.println('N');
-}
-
-void updateGear(int gear)
-{
-    Serial1.print('G');
-    Serial1.println(gear);
-}
-
-void updateGauges()
-{
-    // Upper Gauges
     Serial1.print('R');
     Serial1.println(5 * readSensors(RPM));
 
     Serial1.print('S');
-    Serial1.println(0);
+    Serial1.println(readSensors(RPM));
 
     Serial1.print('C');
-    Serial1.println(0);
-
-    // Lower Gauges
-    Serial1.print('V');
-    Serial1.println(0);
-
-    Serial1.print('F');
-    Serial1.println(0);
-
-    Serial1.print('N');
-    Serial1.println(0);
+    Serial1.println(readSensors(MAP));
 
     Serial1.print("T");
-    Serial1.println(max(0, min(100, (int)((readSensors(TPS) - 140) * 100) / (860 - 140))));
+    Serial1.println(max(0, min(100, (int)((readSensors(TPS) - 140) * 100) / (865 - 140))));
 }
 
-int laptimer = 0;
+unsigned int laptimer = 0;
 
 void incrementLaptimer()
 {
+    static unsigned long lastTick = 0;
+    unsigned long now = millis();
+
+    if (now - lastTick < 1000) return;
+    lastTick = now;
+
     laptimer++;
 
     int seconds = laptimer % 60;
@@ -99,5 +82,6 @@ void warning_lights(int warning, bool state)
         break;
     }
 }
+
 
 #endif
