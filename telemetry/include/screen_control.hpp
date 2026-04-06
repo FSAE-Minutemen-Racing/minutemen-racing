@@ -2,19 +2,43 @@
 #ifndef SCREEN_CONTROL_HPP
 #define SCREEN_CONTROL_HPP
 
-void updateDashboard()
+#define SCREEN_UPDATE_INTERVAL 100
+
+void changeGear(int gear)
 {
     Serial1.print('R');
-    Serial1.println(5 * readSensors(RPM));
 
-    Serial1.print('S');
-    Serial1.println(readSensors(RPM));
+    if (gear > 0 and gear <= 6)
+    {
+        Serial1.println(gear);
+    }
+    else if (gear == 0)
+    {
+        Serial1.println('N');
+    }
+}
 
-    Serial1.print('C');
-    Serial1.println(readSensors(MAP));
+void updateDashboard()
+{
+    static unsigned long lastUpdate = 0;
+    unsigned long now = millis();
 
-    Serial1.print("T");
-    Serial1.println(max(0, min(100, (int)((readSensors(TPS) - 140) * 100) / (865 - 140))));
+    if (now - lastUpdate >= SCREEN_UPDATE_INTERVAL)
+    {
+        lastUpdate = now;
+
+        Serial1.print('R');
+        Serial1.println(readSensors(RPM));
+
+        Serial1.print('S');
+        Serial1.println(readSensors(RPM));
+
+        Serial1.print('C');
+        Serial1.println(readSensors(MAP));
+
+        Serial1.print("T");
+        Serial1.println(max(0, min(100, (int)((readSensors(TPS) - 195) * 100) / (865 - 195))));
+    }
 }
 
 unsigned int laptimer = 0;
@@ -24,20 +48,22 @@ void incrementLaptimer()
     static unsigned long lastTick = 0;
     unsigned long now = millis();
 
-    if (now - lastTick < 1000) return;
-    lastTick = now;
+    if (now - lastTick >= 1000)
+    {
+        lastTick = now;
 
-    laptimer++;
+        laptimer++;
 
-    int seconds = laptimer % 60;
-    int minutes = (laptimer / 60) % 60;
-    int hours = (laptimer / 3600) % 24;
+        int seconds = laptimer % 60;
+        int minutes = (laptimer / 60) % 60;
+        int hours = (laptimer / 3600) % 24;
 
-    char laptimerString[8];
-    sprintf(laptimerString, "%02d:%02d:%02d", hours, minutes, seconds);
+        char laptimerString[8];
+        sprintf(laptimerString, "%02d:%02d:%02d", hours, minutes, seconds);
 
-    Serial1.print('L');
-    Serial1.println(laptimerString);
+        Serial1.print('L');
+        Serial1.println(laptimerString);
+    }
 }
 
 enum Warnings
@@ -82,6 +108,5 @@ void warning_lights(int warning, bool state)
         break;
     }
 }
-
 
 #endif

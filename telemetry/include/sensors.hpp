@@ -2,8 +2,31 @@
 #ifndef SENSORS_HPP
 #define SENSORS_HPP
 
+volatile unsigned long lastPulseTime = 0;
+volatile unsigned long pulseInterval = 0;
+
+void pulseISR() {
+    unsigned long now = micros();
+    unsigned long interval = now - lastPulseTime;
+
+    if (interval > 3750) { 
+        pulseInterval = interval;
+        lastPulseTime = now;
+    }
+}
+
 const byte inputPin = 2;
-volatile unsigned long pulseCount = 0;
+
+void initSensors() {
+    pinMode(inputPin, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(inputPin), pulseISR, FALLING);
+}
+
+int calculateRPM() {
+    if (micros() - lastPulseTime > 500000) return 0;
+    
+    return (60000000UL / pulseInterval) / 5; // Experiemental 5:1 raito
+}
 
 enum Sensors
 {
@@ -13,30 +36,12 @@ enum Sensors
     MAP  // Manifold Absolute Pressure
 };
 
-void pulseISR()
-{
-    pulseCount++;
-}
-
-unsigned long measureFrequency(int windowMs)
-{
-    pulseCount = 0;
-    unsigned long startTime = millis();
-    delay(windowMs);
-    unsigned long endTime = millis();
-
-    float gateTime = (endTime - startTime) / 1000.0;
-    unsigned long frequency = pulseCount / gateTime;
-
-    return frequency;
-}
-
 int readSensors(int sensor)
 {
     switch (sensor)
     {
     case RPM:
-        return measureFrequency(100);
+        return calculateRPM();
 
     case AFR:
         return analogRead(A0);
@@ -50,11 +55,6 @@ int readSensors(int sensor)
     default:
         return -1;
     }
-}
-
-void initSensors() {
-    pinMode(inputPin, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(inputPin), pulseISR, FALLING);
 }
 
 #endif
