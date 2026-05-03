@@ -3,6 +3,8 @@
 #include "server.hpp"
 #include "screen_control.hpp"
 
+int gear;
+
 void setup()
 {
     Serial1.begin(9600);
@@ -15,5 +17,6 @@ void loop()
 {
     runServer();
     incrementLaptimer();
-    updateDashboard();
+    gear = senseGear();
+    updateDashboard(gear);
 }

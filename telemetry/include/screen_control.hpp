@@ -2,11 +2,11 @@
 #ifndef SCREEN_CONTROL_HPP
 #define SCREEN_CONTROL_HPP
 
-#define SCREEN_UPDATE_INTERVAL 100
+#define SCREEN_UPDATE_INTERVAL 200
 
 void changeGear(int gear)
 {
-    Serial1.print('R');
+    Serial1.print('G');
 
     if (gear > 0 and gear <= 6)
     {
@@ -18,7 +18,7 @@ void changeGear(int gear)
     }
 }
 
-void updateDashboard()
+void updateDashboard(int gear)
 {
     static unsigned long lastUpdate = 0;
     unsigned long now = millis();
@@ -27,14 +27,10 @@ void updateDashboard()
     {
         lastUpdate = now;
 
+        changeGear(gear);
+
         Serial1.print('R');
         Serial1.println(readSensors(RPM));
-
-        Serial1.print('S');
-        Serial1.println(readSensors(RPM));
-
-        Serial1.print('C');
-        Serial1.println(readSensors(MAP));
 
         Serial1.print("T");
         Serial1.println(max(0, min(100, (int)((readSensors(TPS) - 195) * 100) / (865 - 195))));
