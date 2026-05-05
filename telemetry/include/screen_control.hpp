@@ -18,7 +18,7 @@ void changeGear(int gear)
     }
 }
 
-void updateDashboard(int gear)
+void updateDashboard(int gear, double speed)
 {
     static unsigned long lastUpdate = 0;
     unsigned long now = millis();
@@ -34,6 +34,9 @@ void updateDashboard(int gear)
 
         Serial1.print("T");
         Serial1.println(max(0, min(100, (int)((readSensors(TPS) - 195) * 100) / (865 - 195))));
+
+        Serial1.print('S');
+        Serial1.println(speed);
     }
 }
 

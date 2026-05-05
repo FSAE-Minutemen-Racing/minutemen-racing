@@ -18,5 +18,6 @@ void loop()
     runServer();
     incrementLaptimer();
     gear = senseGear();
-    updateDashboard(gear);
+    speed = getSpeed(gear);
+    updateDashboard(gear, speed);
 }

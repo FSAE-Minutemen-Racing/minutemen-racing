@@ -2,12 +2,22 @@
 #ifndef SENSORS_HPP
 #define SENSORS_HPP
 
+// Magic numbers for powertrain, units of in/rev
+#define RATIO_1 2.401
+#define RATIO_2 1.947
+#define RATIO_3 1.555
+#define RATIO_4 1.333
+#define RATIO_5 1.190
+
 volatile unsigned long lastPulseTime = 0;
 volatile unsigned long pulseInterval = 0;
 
 const unsigned int gear_up_pin = 19;
 const unsigned int gear_down_pin = 8;
 const unsigned int neutral_pin = 4;
+
+
+ 
 
 void pulseISR()
 {
@@ -130,6 +140,44 @@ int senseGear() {
     }
 
     return gear;
+}
+
+
+double getSpeed(int gear) {
+    
+    switch (gear) {
+        
+        case 0:
+            return 0;
+            break;
+        
+        case 1:
+            return readSensors(RPM) * RATIO_1 / 1056.0;    
+            break;
+
+        case 2:
+            return readSensors(RPM) * RATIO_2 / 1056.0;    
+            break;
+
+        case 3:
+            return readSensors(RPM) * RATIO_3 / 1056.0;    
+            break;
+
+
+        case 4:
+            return readSensors(RPM) * RATIO_4 / 1056.0;    
+            break;
+
+
+        case 5:
+            return readSensors(RPM) * RATIO_5 / 1056.0;    
+            break;
+
+        default: 
+            return 0.0;
+            break;
+        
+        }
 }
 
 #endif
