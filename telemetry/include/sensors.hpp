@@ -174,7 +174,7 @@ double getSpeed(int gear) {
             break;
 
         default: 
-            return 0.0;
+            return -0.5;
             break;
         
         }
