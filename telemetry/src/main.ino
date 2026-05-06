@@ -4,7 +4,7 @@
 #include "screen_control.hpp"
 
 int gear;
-int speed;
+double speed;
 
 void setup()
 {
