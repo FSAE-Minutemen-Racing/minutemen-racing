@@ -4,67 +4,6 @@
 
 #define SCREEN_UPDATE_INTERVAL 200
 
-void changeGear(int gear)
-{
-    Serial1.print('G');
-
-    if (gear > 0 and gear <= 6)
-    {
-        Serial1.println(gear);
-    }
-    else if (gear == 0)
-    {
-        Serial1.println('N');
-    }
-}
-
-void updateDashboard(int gear, double speed)
-{
-    static unsigned long lastUpdate = 0;
-    unsigned long now = millis();
-
-    if (now - lastUpdate >= SCREEN_UPDATE_INTERVAL)
-    {
-        lastUpdate = now;
-
-        changeGear(gear);
-
-        Serial1.print('R');
-        Serial1.println(readSensors(RPM));
-
-        Serial1.print("T");
-        Serial1.println(max(0, min(100, (int)((readSensors(TPS) - 195) * 100) / (865 - 195))));
-
-        Serial1.print('S');
-        Serial1.println(speed);
-    }
-}
-
-unsigned int laptimer = 0;
-
-void incrementLaptimer()
-{
-    static unsigned long lastTick = 0;
-    unsigned long now = millis();
-
-    if (now - lastTick >= 1000)
-    {
-        lastTick = now;
-
-        laptimer++;
-
-        int seconds = laptimer % 60;
-        int minutes = (laptimer / 60) % 60;
-        int hours = (laptimer / 3600) % 24;
-
-        char laptimerString[8];
-        sprintf(laptimerString, "%02d:%02d:%02d", hours, minutes, seconds);
-
-        Serial1.print('L');
-        Serial1.println(laptimerString);
-    }
-}
-
 enum Warnings
 {
     KILL,
@@ -72,6 +11,8 @@ enum Warnings
     STALL,
     BATT
 };
+
+bool warning_state[4] = {false, false, false, false};
 
 void warning_lights(int warning, bool state)
 {
@@ -105,6 +46,86 @@ void warning_lights(int warning, bool state)
         else
             Serial1.println('b');
         break;
+    }
+}
+
+void changeGear(int gear)
+{
+    Serial1.print('G');
+
+    if (gear > 0 and gear <= 6)
+    {
+        Serial1.println(gear);
+    }
+    else if (gear == 0)
+    {
+        Serial1.println('N');
+    }
+}
+
+void updateDashboard(int gear, double speed)
+{
+    static unsigned long lastUpdate = 0;
+    unsigned long now = millis();
+
+    if (now - lastUpdate >= SCREEN_UPDATE_INTERVAL)
+    {
+        lastUpdate = now;
+
+        // Gear
+        changeGear(gear);
+
+        // RPM
+        Serial1.print('R');
+        Serial1.println(readSensors(RPM));
+
+        // Speed
+        Serial1.print('S');
+        Serial1.println(speed);
+
+        // TPS
+        Serial1.print("T");
+        Serial1.println(max(0, min(100, (int)((readSensors(TPS) - 195) * 100) / (865 - 195))));
+
+        // Battery voltage and BATT light
+        float voltage = getBatteryVoltage();
+        if (voltage < 12.2 and not warning_state[BATT])
+        {
+            warning_state[BATT] = true;
+            warning_lights(BATT, true);
+        }
+        else if (voltage > 12.2 and warning_state[BATT])
+        {
+            warning_state[BATT] = false;
+            warning_lights(BATT, false);
+        }
+        Serial1.print("V");
+        Serial1.println(voltage);
+    }
+}
+
+unsigned int laptimer = 0;
+
+void incrementLaptimer()
+{
+    static unsigned long lastTick = 0;
+    unsigned long now = millis();
+
+    if (now - lastTick >= 1000)
+    {
+        lastTick = now;
+
+        laptimer++;
+
+        int seconds = laptimer % 60;
+        int minutes = (laptimer / 60) % 60;
+        int hours = (laptimer / 3600) % 24;
+
+        char laptimerString[8];
+        sprintf(laptimerString, "%02d:%02d:%02d", hours, minutes, seconds);
+
+        Serial1.print('L');
+        Serial1.println(laptimerString);
     }
 }
 

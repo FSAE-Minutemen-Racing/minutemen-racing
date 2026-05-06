@@ -16,9 +16,6 @@ const unsigned int gear_up_pin = 19;
 const unsigned int gear_down_pin = 8;
 const unsigned int neutral_pin = 4;
 
-
- 
-
 void pulseISR()
 {
     unsigned long now = micros();
@@ -88,52 +85,59 @@ int readSensors(int sensor)
 
 static const unsigned long SHIFT_TIMEOUT_MS = 300UL;
 
-int senseGear() {
-    static int            gear              = 1;
-    static bool           shifting          = false;
-    static bool           waitingForRelease = false;   // ← new
-    static unsigned long  shiftStartMs      = 0;
+int senseGear()
+{
+    static int gear = 1;
+    static bool shifting = false;
+    static bool waitingForRelease = false;
+    static unsigned long shiftStartMs = 0;
 
     const unsigned long now = millis();
 
     // ── Neutral sensor ────────────────────────────────────────────────────
-    if (!shifting && digitalRead(neutral_pin) == LOW) {
+    if (!shifting && digitalRead(neutral_pin) == LOW)
+    {
         gear = 1;
         return 0;
     }
 
     // ── Both paddles LOW → invalid / ignition off ─────────────────────────
-    if (digitalRead(gear_up_pin) == LOW && digitalRead(gear_down_pin) == LOW) {
-        shifting          = false;
+    if (digitalRead(gear_up_pin) == LOW && digitalRead(gear_down_pin) == LOW)
+    {
+        shifting = false;
         waitingForRelease = false;
         return gear;
     }
 
     // ── Both paddles released → stroke complete OR release after timeout ───
-    if (digitalRead(gear_up_pin) == HIGH && digitalRead(gear_down_pin) == HIGH) {
-        shifting          = false;
-        waitingForRelease = false;   // ← also clears the timeout latch
+    if (digitalRead(gear_up_pin) == HIGH && digitalRead(gear_down_pin) == HIGH)
+    {
+        shifting = false;
+        waitingForRelease = false; // ← also clears the timeout latch
     }
 
     // ── Timeout guard ─────────────────────────────────────────────────────
-    if (shifting && (now - shiftStartMs >= SHIFT_TIMEOUT_MS)) {
-        shifting          = false;
-        waitingForRelease = true;    // ← latch: don't re-arm until released
+    if (shifting && (now - shiftStartMs >= SHIFT_TIMEOUT_MS))
+    {
+        shifting = false;
+        waitingForRelease = true; // ← latch: don't re-arm until released
     }
 
     // ── Up-shift ──────────────────────────────────────────────────────────
-    if (!shifting && !waitingForRelease &&   // ← guard added
-        digitalRead(gear_up_pin) == LOW && gear < 6) {
-        shifting     = true;
+    if (!shifting && !waitingForRelease && // ← guard added
+        digitalRead(gear_up_pin) == LOW && gear < 6)
+    {
+        shifting = true;
         shiftStartMs = now;
         gear++;
         return gear;
     }
 
     // ── Down-shift ────────────────────────────────────────────────────────
-    if (!shifting && !waitingForRelease &&   // ← guard added
-        digitalRead(gear_down_pin) == LOW && gear > 1) {
-        shifting     = true;
+    if (!shifting && !waitingForRelease && // ← guard added
+        digitalRead(gear_down_pin) == LOW && gear > 1)
+    {
+        shifting = true;
         shiftStartMs = now;
         gear--;
         return gear;
@@ -142,42 +146,45 @@ int senseGear() {
     return gear;
 }
 
+double getSpeed(int gear)
+{
 
-double getSpeed(int gear) {
-    
-    switch (gear) {
-        
-        case 0:
-            return 0;
-            break;
-        
-        case 1:
-            return readSensors(RPM) * RATIO_1 / 1056.0;    
-            break;
+    switch (gear)
+    {
 
-        case 2:
-            return readSensors(RPM) * RATIO_2 / 1056.0;    
-            break;
+    case 0:
+        return 0;
+        break;
 
-        case 3:
-            return readSensors(RPM) * RATIO_3 / 1056.0;    
-            break;
+    case 1:
+        return readSensors(RPM) * RATIO_1 / 1056.0;
+        break;
 
+    case 2:
+        return readSensors(RPM) * RATIO_2 / 1056.0;
+        break;
 
-        case 4:
-            return readSensors(RPM) * RATIO_4 / 1056.0;    
-            break;
+    case 3:
+        return readSensors(RPM) * RATIO_3 / 1056.0;
+        break;
 
+    case 4:
+        return readSensors(RPM) * RATIO_4 / 1056.0;
+        break;
 
-        case 5:
-            return readSensors(RPM) * RATIO_5 / 1056.0;    
-            break;
+    case 5:
+        return readSensors(RPM) * RATIO_5 / 1056.0;
+        break;
 
-        default: 
-            return -0.5;
-            break;
-        
-        }
+    default:
+        return -0.5;
+        break;
+    }
+}
+
+float getBatteryVoltage()
+{
+    return (((analogRead(A3) / 1023.0) * 5.0) * 3.2) + 0.22; // plus 0.22 accounts for voltage drop from battery to Vin
 }
 
 #endif
