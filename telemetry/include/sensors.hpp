@@ -153,7 +153,7 @@ double getSpeed(int gear)
     {
 
     case 0:
-        return 0;
+        return 0.001;
         break;
 
     case 1:
@@ -184,7 +184,7 @@ double getSpeed(int gear)
 
 float getBatteryVoltage()
 {
-    return (((analogRead(A3) / 1023.0) * 5.0) * 3.2) + 0.22; // plus 0.22 accounts for voltage drop from battery to Vin
+    return (((analogRead(A3) / 1023.0) * 5.0) * 3.2 * 3.42) + 0.22; // plus 0.22 accounts for voltage drop from battery to Vin
 }
 
 #endif
