@@ -2,6 +2,8 @@
 #ifndef SCREEN_CONTROL_HPP
 #define SCREEN_CONTROL_HPP
 
+#include "kline.h"
+
 #define SCREEN_UPDATE_INTERVAL 200
 
 enum Warnings
@@ -86,6 +88,13 @@ void updateDashboard(int gear, double speed)
         // TPS
         Serial1.print("T");
         Serial1.println(max(0, min(100, (int)((readSensors(TPS) - 195) * 100) / (865 - 195))));
+
+        // Coolant temperature from the ECU, once the K-line session is up
+        if (kLineReady())
+        {
+            Serial1.print('C');
+            Serial1.println(klineCoolant);
+        }
 
         // Battery voltage and BATT light
         float voltage = getBatteryVoltage();

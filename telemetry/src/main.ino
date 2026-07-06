@@ -1,13 +1,6 @@
-/*
-***NOT READY FOR USE***
-
-K-Line not yet implemented.
-
-Serial port alloactions undecided
-*/
-
 #include <Arduino.h>
 #include "sensors.hpp"
+#include "server.hpp"
 #include "kline.h"
 #include "screen_control.hpp"
 
@@ -17,11 +10,16 @@ double speed;
 void setup()
 {
     Serial1.begin(9600);
+
+    initServer();
     initSensors();
+    initKLine();
 }
 
 void loop()
 {
+    runServer();
+    updateKLine();
     incrementLaptimer();
     gear = senseGear();
     speed = getSpeed(gear);
