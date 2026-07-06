@@ -99,7 +99,7 @@ const updateGaugeElement = (gaugeElement, value, gaugeNumber) => {
 
     switch (gaugeNumber) {
         case 0: // RPM
-            const rpmMax = 8000;
+            const rpmMax = 16000; // full-scale, matches the in-car dash (dashboard.ino) — 2004 R6 redline
             const rpmValue = Math.max(0, Math.min(rpmMax, value));
             gaugeValueSpan = gaugeElement.querySelector('.gauge-value');
             let rpmPercent = Math.max(0, Math.min(100, (rpmValue / rpmMax) * 100));
@@ -219,5 +219,5 @@ const getData = () => {
     xhr.send();
 };
 
-// Start polling every 200ms
+// Start polling every 500ms
 let dataInterval = setInterval(getData, 500);
