@@ -51,6 +51,10 @@ int calculateRPM()
     if (micros() - lastPulseTime > 500000UL)
         return 0;
 
+    // No pulse measured yet (e.g. first ~500 ms after boot); avoid divide-by-zero.
+    if (pulseInterval == 0)
+        return 0;
+
     return (60000000UL / pulseInterval) / 4;
 }
 
