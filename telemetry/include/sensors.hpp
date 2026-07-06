@@ -88,6 +88,7 @@ static const unsigned long SHIFT_TIMEOUT_MS = 300UL;
 int senseGear()
 {
     static int gear = 1;
+    static bool inNeutral = false;
     static bool shifting = false;
     static bool waitingForRelease = false;
     static unsigned long shiftStartMs = 0;
@@ -95,9 +96,11 @@ int senseGear()
     const unsigned long now = millis();
 
     // ── Neutral sensor ────────────────────────────────────────────────────
+    // Neutral sits between 1st and 2nd (1-N-2-3-4-5 sequential box), so it
+    // is tracked as its own state: down goes to 1st, up goes to 2nd.
     if (!shifting && digitalRead(neutral_pin) == LOW)
     {
-        gear = 1;
+        inNeutral = true;
         return 0;
     }
 
@@ -106,7 +109,7 @@ int senseGear()
     {
         shifting = false;
         waitingForRelease = false;
-        return gear;
+        return inNeutral ? 0 : gear;
     }
 
     // ── Both paddles released → stroke complete OR release after timeout ───
@@ -125,25 +128,41 @@ int senseGear()
 
     // ── Up-shift ──────────────────────────────────────────────────────────
     if (!shifting && !waitingForRelease && // ← guard added
-        digitalRead(gear_up_pin) == LOW && gear < 6)
+        digitalRead(gear_up_pin) == LOW && (inNeutral || gear < 6))
     {
         shifting = true;
         shiftStartMs = now;
-        gear++;
+        if (inNeutral)
+        {
+            gear = 2;
+            inNeutral = false;
+        }
+        else
+        {
+            gear++;
+        }
         return gear;
     }
 
     // ── Down-shift ────────────────────────────────────────────────────────
     if (!shifting && !waitingForRelease && // ← guard added
-        digitalRead(gear_down_pin) == LOW && gear > 1)
+        digitalRead(gear_down_pin) == LOW && (inNeutral || gear > 1))
     {
         shifting = true;
         shiftStartMs = now;
-        gear--;
+        if (inNeutral)
+        {
+            gear = 1;
+            inNeutral = false;
+        }
+        else
+        {
+            gear--;
+        }
         return gear;
     }
 
-    return gear;
+    return inNeutral ? 0 : gear;
 }
 
 double getSpeed(int gear)
