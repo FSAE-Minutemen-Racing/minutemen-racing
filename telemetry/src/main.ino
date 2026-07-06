@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "sensors.hpp"
+#include "gps.hpp"
 #include "server.hpp"
 #include "screen_control.hpp"
 
@@ -12,10 +13,12 @@ void setup()
 
     initServer();
     initSensors();
+    initGPS();
 }
 
 void loop()
 {
+    pollGPS();
     runServer();
     incrementLaptimer();
     gear = senseGear();

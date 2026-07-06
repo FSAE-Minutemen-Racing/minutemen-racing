@@ -3,6 +3,7 @@
 #define SERVER_HPP
 
 #include <WiFiS3.h>
+#include "gps.hpp"
 
 const char ssid[] = "minutemen-racing";
 const char pass[] = "password";
@@ -43,7 +44,8 @@ void runServer()
                         client.print(readSensors(TPS));
                         client.print(",");
                         client.print(readSensors(MAP));
-                        client.print(",0,0");
+                        client.print(",");
+                        client.print(getGPSData());
 
                         break;
                     }
