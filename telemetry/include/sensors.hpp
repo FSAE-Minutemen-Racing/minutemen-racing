@@ -96,8 +96,9 @@ int senseGear()
     const unsigned long now = millis();
 
     // ── Neutral sensor ────────────────────────────────────────────────────
-    // Neutral sits between 1st and 2nd (1-N-2-3-4-5 sequential box), so it
-    // is tracked as its own state: down goes to 1st, up goes to 2nd.
+    // Neutral sits between 1st and 2nd (1-N-2-3-4-5-6 sequential box, 2004
+    // Yamaha R6), so it is tracked as its own state: down goes to 1st, up
+    // goes to 2nd.
     if (!shifting && digitalRead(neutral_pin) == LOW)
     {
         inNeutral = true;
