@@ -4,6 +4,12 @@
 
 #define SCREEN_UPDATE_INTERVAL 200
 
+// Battery warning hysteresis band: on below 12.0 V, off above 12.4 V,
+// so noise around a single threshold can't chatter the BATT light.
+// Values provisional pending confirmation against the pack chemistry (issue #11).
+#define BATT_WARN_ON_VOLTAGE 12.0
+#define BATT_WARN_OFF_VOLTAGE 12.4
+
 enum Warnings
 {
     KILL,
@@ -89,18 +95,23 @@ void updateDashboard(int gear, double speed)
 
         // Battery voltage and BATT light
         float voltage = getBatteryVoltage();
-        if (voltage < 12.2 and not warning_state[BATT])
+        if (voltage < BATT_WARN_ON_VOLTAGE)
         {
             warning_state[BATT] = true;
-            warning_lights(BATT, true);
         }
-        else if (voltage > 12.2 and warning_state[BATT])
+        else if (voltage > BATT_WARN_OFF_VOLTAGE)
         {
             warning_state[BATT] = false;
-            warning_lights(BATT, false);
         }
         Serial1.print("V");
         Serial1.println(voltage);
+
+        // Resend every warning light state each cycle so a dropped byte
+        // or a display reboot can't leave a light stale
+        for (int warning = KILL; warning <= BATT; warning++)
+        {
+            warning_lights(warning, warning_state[warning]);
+        }
     }
 }
 
