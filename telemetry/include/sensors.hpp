@@ -186,20 +186,15 @@ int senseGear()
 // gear, so persistent disagreement means the tracked gear is wrong and we
 // resync to the measured one.
 
-// 2004 Yamaha YZF-R6 spec internal gearbox ratios, 1st–6th. Kept separate
-// from RATIO_1..5 above, which encode the current (known-suspect) speed
-// calibration rather than the spec drivetrain.
-static const double GEARBOX_RATIOS[6] = {2.846, 1.947, 1.556, 1.333, 1.190, 1.083};
+// Spec gearbox ratios 1st–6th, indexed by gear - 1. Same constants as
+// getSpeed() so a calibration edit happens in one place (top of file).
+static const double GEARBOX_RATIOS[6] = {RATIO_1, RATIO_2, RATIO_3,
+                                         RATIO_4, RATIO_5, RATIO_6};
 
-#define PRIMARY_RATIO 1.955 // 86/44, crank → clutch
-
-// TODO(team): placeholders — measure MR19's actual sprockets and tire
-// rolling circumference. If these are far off, no gear ever falls inside
-// GEAR_CHECK_TOLERANCE and the cross-check never resyncs (fails safe).
-#define FINAL_DRIVE_RATIO 3.000    // stock R6 48/16; MR19 sprockets unconfirmed
-#define TIRE_CIRCUMFERENCE_IN 56.5 // ~18 in OD tire; unconfirmed
-
-// Engine RPM per mph of ground speed in a given gear (1 mph = 1056 in/min)
+// Engine RPM per mph of ground speed in a given gear (1 mph = 1056 in/min).
+// While FINAL_DRIVE_RATIO / TIRE_CIRCUMFERENCE_IN are uncalibrated (TODO at
+// top of file), no gear falls inside GEAR_CHECK_TOLERANCE and the
+// cross-check never resyncs (fails safe).
 #define RPM_PER_MPH(gearboxRatio) \
     (PRIMARY_RATIO * (gearboxRatio) * FINAL_DRIVE_RATIO * 1056.0 / TIRE_CIRCUMFERENCE_IN)
 
