@@ -2,12 +2,19 @@
 #ifndef SENSORS_HPP
 #define SENSORS_HPP
 
-// Magic numbers for powertrain, units of in/rev
-#define RATIO_1 2.401
-#define RATIO_2 1.947
-#define RATIO_3 1.555
-#define RATIO_4 1.333
-#define RATIO_5 1.190
+// 2004 Yamaha YZF-R6 drivetrain, spec-sheet values (dimensionless reductions)
+#define PRIMARY_RATIO 1.955 // 86/44, crank -> clutch
+#define RATIO_1 2.846       // 37/13
+#define RATIO_2 1.947       // 37/19
+#define RATIO_3 1.556       // 28/18
+#define RATIO_4 1.333       // 32/24
+#define RATIO_5 1.190       // 25/21
+#define RATIO_6 1.083       // 26/24
+
+// TODO(team): placeholders — measure MR19's actual sprockets and tire rolling
+// circumference; displayed speed is only correct once these are confirmed.
+#define FINAL_DRIVE_RATIO 3.000    // stock R6 48/16; MR19 sprockets unconfirmed
+#define TIRE_CIRCUMFERENCE_IN 56.5 // ~18 in OD tire; unconfirmed
 
 volatile unsigned long lastPulseTime = 0;
 volatile unsigned long pulseInterval = 0;
@@ -172,38 +179,45 @@ int senseGear()
 
 double getSpeed(int gear)
 {
+    double gearRatio;
 
     switch (gear)
     {
 
     case 0:
         return 0.001;
-        break;
 
     case 1:
-        return readSensors(RPM) * RATIO_1 / 1056.0;
+        gearRatio = RATIO_1;
         break;
 
     case 2:
-        return readSensors(RPM) * RATIO_2 / 1056.0;
+        gearRatio = RATIO_2;
         break;
 
     case 3:
-        return readSensors(RPM) * RATIO_3 / 1056.0;
+        gearRatio = RATIO_3;
         break;
 
     case 4:
-        return readSensors(RPM) * RATIO_4 / 1056.0;
+        gearRatio = RATIO_4;
         break;
 
     case 5:
-        return readSensors(RPM) * RATIO_5 / 1056.0;
+        gearRatio = RATIO_5;
+        break;
+
+    case 6:
+        gearRatio = RATIO_6;
         break;
 
     default:
         return -0.5;
-        break;
     }
+
+    // mph = engine rev/min ÷ total reduction × in/wheel-rev ÷ 1056 in/min-per-mph
+    return readSensors(RPM) * TIRE_CIRCUMFERENCE_IN /
+           (PRIMARY_RATIO * gearRatio * FINAL_DRIVE_RATIO * 1056.0);
 }
 
 float getBatteryVoltage()
