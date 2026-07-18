@@ -1,6 +1,4 @@
 #pragma once
-#ifndef SCREEN_CONTROL_HPP
-#define SCREEN_CONTROL_HPP
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -63,33 +61,15 @@ static char warningCommand(int warning, bool state)
     }
 }
 
-void warning_lights(int warning, bool state)
-{
-    char command = warningCommand(warning, state);
-    if (command)
-        Serial1.println(command);
-}
-
 static size_t appendGear(char *tx, size_t pos, size_t txSize, int gear)
 {
-    if (gear > 0 and gear <= 6)
-    {
+    if (gear > 0 && gear <= 6)
         return appendToDashboardTx(tx, pos, txSize, "G%d\n", gear);
-    }
-    else if (gear == 0)
-    {
+
+    if (gear == 0)
         return appendToDashboardTx(tx, pos, txSize, "GN\n");
-    }
 
     return pos;
-}
-
-void changeGear(int gear)
-{
-    char tx[8];
-    size_t pos = appendGear(tx, 0, sizeof(tx), gear);
-    if (pos > 0 && pos < sizeof(tx))
-        Serial1.write((const uint8_t *)tx, pos);
 }
 
 void updateDashboard(int gear, double speed, int rpm)
@@ -176,5 +156,3 @@ void updateDashboard(int gear, double speed, int rpm)
     if (resend)
         lastResend = now;
 }
-
-#endif

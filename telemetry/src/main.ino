@@ -4,9 +4,6 @@
 #include "server.hpp"
 #include "screen_control.hpp"
 
-int gear;
-double speed;
-
 void setup()
 {
     Serial1.begin(DASHBOARD_SERIAL_BAUD);
@@ -28,7 +25,7 @@ void loop()
     if (gps.speed.isUpdated() && gps.speed.isValid())
         crossCheckGear(rpm, gps.speed.mph());
 
-    gear = senseGear();
-    speed = getSpeed(gear, rpm);
+    const int gear = senseGear();
+    const double speed = getSpeed(gear, rpm);
     updateDashboard(gear, speed, rpm);
 }

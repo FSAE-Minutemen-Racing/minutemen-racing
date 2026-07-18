@@ -1,6 +1,4 @@
 #pragma once
-#ifndef SENSORS_HPP
-#define SENSORS_HPP
 
 // 2004 Yamaha YZF-R6 drivetrain, spec-sheet values (dimensionless reductions)
 #define PRIMARY_RATIO 1.955 // 86/44, crank -> clutch
@@ -15,12 +13,21 @@
 #define FINAL_DRIVE_RATIO 3.48     // measured MR19 sprockets
 #define TIRE_CIRCUMFERENCE_IN 64.4 // measured 20.5 in OD tire × pi
 
-volatile unsigned long lastPulseTime = 0;
-volatile unsigned long pulseInterval = 0;
+// Spec gearbox ratios 1st–6th, indexed by gear - 1.
+static const double GEARBOX_RATIOS[6] = {RATIO_1, RATIO_2, RATIO_3,
+                                         RATIO_4, RATIO_5, RATIO_6};
 
+// Engine RPM per mph of ground speed in a given gear (1 mph = 1056 in/min).
+#define RPM_PER_MPH(gearboxRatio) \
+    (PRIMARY_RATIO * (gearboxRatio) * FINAL_DRIVE_RATIO * 1056.0 / TIRE_CIRCUMFERENCE_IN)
+
+const byte rpm_pulse_pin = 2;
 const unsigned int gear_up_pin = 19;
 const unsigned int gear_down_pin = 8;
 const unsigned int neutral_pin = 4;
+
+volatile unsigned long lastPulseTime = 0;
+volatile unsigned long pulseInterval = 0;
 
 void pulseISR()
 {
@@ -34,21 +41,13 @@ void pulseISR()
     }
 }
 
-const byte inputPin = 2;
-
 void initSensors()
 {
-    // RPM
-    pinMode(inputPin, INPUT);
-    attachInterrupt(digitalPinToInterrupt(inputPin), pulseISR, RISING);
+    pinMode(rpm_pulse_pin, INPUT);
+    attachInterrupt(digitalPinToInterrupt(rpm_pulse_pin), pulseISR, RISING);
 
-    // Gear Up
     pinMode(gear_up_pin, INPUT);
-
-    // Gear Down
     pinMode(gear_down_pin, INPUT);
-
-    // Neutral
     pinMode(neutral_pin, INPUT_PULLUP);
 }
 
@@ -128,54 +127,42 @@ int senseGear()
         return inNeutral ? 0 : currentGear;
     }
 
-    // ── Both paddles released → stroke complete OR release after timeout ───
+    // ── Both paddles released → stroke complete, timeout latch cleared ────
     if (gearUpLevel == HIGH && gearDownLevel == HIGH)
     {
         shifting = false;
-        waitingForRelease = false; // ← also clears the timeout latch
+        waitingForRelease = false;
     }
 
-    // ── Timeout guard ─────────────────────────────────────────────────────
+    // ── Timeout guard: latch until both paddles release before re-arming ──
     if (shifting && (now - shiftStartMs >= SHIFT_TIMEOUT_MS))
     {
         shifting = false;
-        waitingForRelease = true; // ← latch: don't re-arm until released
+        waitingForRelease = true;
     }
 
-    // ── Up-shift ──────────────────────────────────────────────────────────
-    if (!shifting && !waitingForRelease && // ← guard added
-        gearUpLevel == LOW && (inNeutral || currentGear < 6))
+    // ── Shift strokes (exactly one paddle LOW past the early returns) ─────
+    if (!shifting && !waitingForRelease)
     {
-        shifting = true;
-        shiftStartMs = now;
-        if (inNeutral)
-        {
-            currentGear = 2;
-            inNeutral = false;
-        }
-        else
-        {
-            currentGear++;
-        }
-        return currentGear;
-    }
+        const bool shiftUp = gearUpLevel == LOW && (inNeutral || currentGear < 6);
+        const bool shiftDown = gearDownLevel == LOW && (inNeutral || currentGear > 1);
 
-    // ── Down-shift ────────────────────────────────────────────────────────
-    if (!shifting && !waitingForRelease && // ← guard added
-        gearDownLevel == LOW && (inNeutral || currentGear > 1))
-    {
-        shifting = true;
-        shiftStartMs = now;
-        if (inNeutral)
+        if (shiftUp || shiftDown)
         {
-            currentGear = 1;
-            inNeutral = false;
+            shifting = true;
+            shiftStartMs = now;
+            if (inNeutral)
+            {
+                // Neutral sits between 1st and 2nd: up lands in 2nd, down in 1st.
+                currentGear = shiftUp ? 2 : 1;
+                inNeutral = false;
+            }
+            else
+            {
+                currentGear += shiftUp ? 1 : -1;
+            }
+            return currentGear;
         }
-        else
-        {
-            currentGear--;
-        }
-        return currentGear;
     }
 
     return inNeutral ? 0 : currentGear;
@@ -187,23 +174,6 @@ int senseGear()
 // to the wheels, the ratio of RPM to true (GPS) ground speed identifies the
 // gear, so persistent disagreement means the tracked gear is wrong and we
 // resync to the measured one.
-
-// Spec gearbox ratios 1st–6th, indexed by gear - 1. Same constants as
-// getSpeed() so a calibration edit happens in one place (top of file).
-static const double GEARBOX_RATIOS[6] = {RATIO_1, RATIO_2, RATIO_3,
-                                         RATIO_4, RATIO_5, RATIO_6};
-static const double SPEED_MPH_PER_RPM[6] = {
-    TIRE_CIRCUMFERENCE_IN / (PRIMARY_RATIO * RATIO_1 * FINAL_DRIVE_RATIO * 1056.0),
-    TIRE_CIRCUMFERENCE_IN / (PRIMARY_RATIO * RATIO_2 * FINAL_DRIVE_RATIO * 1056.0),
-    TIRE_CIRCUMFERENCE_IN / (PRIMARY_RATIO * RATIO_3 * FINAL_DRIVE_RATIO * 1056.0),
-    TIRE_CIRCUMFERENCE_IN / (PRIMARY_RATIO * RATIO_4 * FINAL_DRIVE_RATIO * 1056.0),
-    TIRE_CIRCUMFERENCE_IN / (PRIMARY_RATIO * RATIO_5 * FINAL_DRIVE_RATIO * 1056.0),
-    TIRE_CIRCUMFERENCE_IN / (PRIMARY_RATIO * RATIO_6 * FINAL_DRIVE_RATIO * 1056.0),
-};
-
-// Engine RPM per mph of ground speed in a given gear (1 mph = 1056 in/min).
-#define RPM_PER_MPH(gearboxRatio) \
-    (PRIMARY_RATIO * (gearboxRatio) * FINAL_DRIVE_RATIO * 1056.0 / TIRE_CIRCUMFERENCE_IN)
 
 #define GEAR_CHECK_MIN_SPEED_MPH 10.0 // below this, launch clutch slip and GPS noise dominate
 #define GEAR_CHECK_TOLERANCE 0.06     // ±6% outer bound. 5th/6th differ by only
@@ -297,24 +267,17 @@ double getSpeed(int gear, int rpm)
     if (gear < 1 || gear > 6)
         return -0.5;
 
-    // mph = engine rev/min × precomputed per-gear drivetrain conversion.
-    return rpm * SPEED_MPH_PER_RPM[gear - 1];
-}
-
-double getSpeed(int gear)
-{
-    return getSpeed(gear, readSensors(RPM));
+    return rpm / RPM_PER_MPH(GEARBOX_RATIOS[gear - 1]);
 }
 
 float getBatteryVoltage()
 {
-    long sum = 0;
-  
+    // Throwaway read lets the ADC input settle after other channels.
     analogRead(A4);
-    for (int i = 0; i < 5; i++) {
-        sum += analogRead(A4);
-    }
 
-    return (((sum / 1023.0)) * 3.43);
+    long sum = 0;
+    for (int i = 0; i < 5; i++)
+        sum += analogRead(A4);
+
+    return (sum / 1023.0) * 3.43;
 }
-#endif

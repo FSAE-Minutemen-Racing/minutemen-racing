@@ -1,6 +1,4 @@
 #pragma once
-#ifndef SERVER_HPP
-#define SERVER_HPP
 
 #include <WiFiS3.h>
 #include <stdio.h>
@@ -117,5 +115,3 @@ void runServer()
         request[requestLen++] = c;
     }
 }
-
-#endif

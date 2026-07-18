@@ -1,6 +1,4 @@
 #pragma once
-#ifndef GPS_HPP
-#define GPS_HPP
 
 #include <Wire.h>
 #include <TinyGPSPlus.h>
@@ -57,19 +55,22 @@ void pollGPS()
     }
 }
 
-String getGPSData()
+// Format one coordinate with 6 decimal places. Done by hand because %f is
+// compiled out of the newlib-nano snprintf this board builds against.
+static void formatCoord(char *out, size_t outSize, double degrees)
 {
-    if (!gps.location.isValid())
-        return "INVALID,INVALID";
+    const bool negative = degrees < 0.0;
+    degrees = fabs(degrees);
 
-    if (gps.location.age() > 5000)
-        return "STALE,STALE";
+    long whole = (long)degrees;
+    long frac = (long)((degrees - whole) * 1000000.0 + 0.5);
+    if (frac >= 1000000L) // rounding carried into the whole part
+    {
+        whole++;
+        frac -= 1000000L;
+    }
 
-    String output;
-    output += String(gps.location.lat(), 6);
-    output += ",";
-    output += String(gps.location.lng(), 6);
-    return output;
+    snprintf(out, outSize, "%s%ld.%06ld", negative ? "-" : "", whole, frac);
 }
 
 void formatGPSData(char *output, size_t outputSize)
@@ -86,33 +87,8 @@ void formatGPSData(char *output, size_t outputSize)
         return;
     }
 
-    double lat = gps.location.lat();
-    double lng = gps.location.lng();
-    bool latNegative = lat < 0.0;
-    bool lngNegative = lng < 0.0;
-
-    lat = fabs(lat);
-    lng = fabs(lng);
-
-    long latWhole = (long)lat;
-    long lngWhole = (long)lng;
-    long latFrac = (long)((lat - latWhole) * 1000000.0 + 0.5);
-    long lngFrac = (long)((lng - lngWhole) * 1000000.0 + 0.5);
-
-    if (latFrac >= 1000000L)
-    {
-        latWhole++;
-        latFrac -= 1000000L;
-    }
-    if (lngFrac >= 1000000L)
-    {
-        lngWhole++;
-        lngFrac -= 1000000L;
-    }
-
-    snprintf(output, outputSize, "%s%ld.%06ld,%s%ld.%06ld",
-             latNegative ? "-" : "", latWhole, latFrac,
-             lngNegative ? "-" : "", lngWhole, lngFrac);
+    char lat[16], lng[16];
+    formatCoord(lat, sizeof(lat), gps.location.lat());
+    formatCoord(lng, sizeof(lng), gps.location.lng());
+    snprintf(output, outputSize, "%s,%s", lat, lng);
 }
-
-#endif
