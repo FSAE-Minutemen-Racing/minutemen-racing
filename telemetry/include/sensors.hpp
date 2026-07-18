@@ -195,8 +195,12 @@ static const double GEARBOX_RATIOS[6] = {RATIO_1, RATIO_2, RATIO_3,
     (PRIMARY_RATIO * (gearboxRatio) * FINAL_DRIVE_RATIO * 1056.0 / TIRE_CIRCUMFERENCE_IN)
 
 #define GEAR_CHECK_MIN_SPEED_MPH 10.0 // below this, launch clutch slip and GPS noise dominate
-#define GEAR_CHECK_TOLERANCE 0.06     // ±6%; adjacent gears differ by ≥10%
+#define GEAR_CHECK_TOLERANCE 0.06     // ±6% outer bound. 5th/6th differ by only
+                                      // 9.9%, so their bands overlap slightly;
+                                      // nearest match decides. Don't widen this.
 #define GEAR_CHECK_AGREE_FIXES 3      // consecutive GPS fixes (~1/s) before resync
+#define GEAR_CHECK_MAX_DELTA_MPH 3.0  // speed change per fix above which GPS lag
+                                      // skews the ratio toward the wrong gear
 
 // Gear implied by the observed RPM/speed ratio, or 0 if no gear is within
 // tolerance (clutch in, mid-shift, or coasting in neutral).
@@ -225,12 +229,21 @@ void crossCheckGear(int rpm, double speedMph)
 {
     static int candidate = 0;
     static int agreeCount = 0;
+    static double lastSpeedMph = -1.0;
 
-    // The neutral switch is ground truth, and mid-shift or low-speed ratios
-    // don't identify a gear.
+    const double deltaMph =
+        (lastSpeedMph < 0) ? 2 * GEAR_CHECK_MAX_DELTA_MPH : fabs(speedMph - lastSpeedMph);
+    lastSpeedMph = speedMph;
+
+    // The neutral switch is ground truth; mid-shift or low-speed ratios don't
+    // identify a gear. Under hard acceleration or braking the GPS speed lags
+    // true speed, which biases the observed ratio toward an adjacent gear, so
+    // those samples are skipped too.
     if (shifting || digitalRead(neutral_pin) == LOW ||
-        rpm <= 0 || speedMph < GEAR_CHECK_MIN_SPEED_MPH)
+        rpm <= 0 || speedMph < GEAR_CHECK_MIN_SPEED_MPH ||
+        deltaMph > GEAR_CHECK_MAX_DELTA_MPH)
     {
+        candidate = 0;
         agreeCount = 0;
         return;
     }
