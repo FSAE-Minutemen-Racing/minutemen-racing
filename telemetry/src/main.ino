@@ -20,7 +20,6 @@ void loop()
 {
     pollGPS();
     runServer();
-    incrementLaptimer();
     gear = senseGear();
     speed = getSpeed(gear);
     updateDashboard(gear, speed);

@@ -89,10 +89,6 @@ void updateDashboard(int gear, double speed)
         Serial1.print('S');
         Serial1.println(speed);
 
-        // TPS
-        Serial1.print("T");
-        Serial1.println(max(0, min(100, (int)((readSensors(TPS) - 195) * 100) / (865 - 195))));
-
         // Battery voltage and BATT light
         float voltage = getBatteryVoltage();
         if (voltage < BATT_WARN_ON_VOLTAGE)
@@ -112,31 +108,6 @@ void updateDashboard(int gear, double speed)
         {
             warning_lights(warning, warning_state[warning]);
         }
-    }
-}
-
-unsigned int laptimer = 0;
-
-void incrementLaptimer()
-{
-    static unsigned long lastTick = 0;
-    unsigned long now = millis();
-
-    if (now - lastTick >= 1000)
-    {
-        lastTick = now;
-
-        laptimer++;
-
-        int seconds = laptimer % 60;
-        int minutes = (laptimer / 60) % 60;
-        int hours = (laptimer / 3600) % 24;
-
-        char laptimerString[8];
-        sprintf(laptimerString, "%02d:%02d:%02d", hours, minutes, seconds);
-
-        Serial1.print('L');
-        Serial1.println(laptimerString);
     }
 }
 
