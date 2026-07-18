@@ -243,7 +243,7 @@ double getSpeed(int gear, int rpm)
 
 float getBatteryVoltage()
 {
-    // Throwaway read lets the ADC input settle after other channels.
+    // Throwaway read lets the ADC input settle before the averaged burst.
     analogRead(A4);
 
     long sum = 0;
