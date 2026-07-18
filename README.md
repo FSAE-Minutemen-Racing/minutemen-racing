@@ -54,13 +54,19 @@ The on-car brain. Runs on an Arduino UNO R4 WiFi and:
 - Tracks **gear position** from up/down shift paddles and a neutral sensor, with
   a shift-timeout state machine.
 - Computes **road speed** from RPM and the selected gear ratio.
-- Reads **AFR**, **TPS**, **MAP**, and **battery voltage** (with a low-voltage warning).
+- Reads **AFR**, **TPS**, **MAP**, **coolant temperature**, and **battery voltage**.
+- Drives dashboard warnings from live inputs: kill switch, coolant cold/hot,
+  stalled engine, and low battery.
 - Runs a 1 Hz **lap timer**.
 - Hosts a WiFi access point (`minutemen-racing`) with an HTTP `GET /data` endpoint
   that returns comma-separated sensor values for the ground station.
 - Pushes display updates to the dashboard over `Serial1` using a single-character
-  command protocol (e.g. `G` gear, `R` RPM, `S` speed, `T` throttle, `V` volts,
-  and upper/lowercase letters to toggle warning lights).
+  command protocol (e.g. `G` gear, `R` RPM, `S` speed, `C` coolant temp, `V`
+  volts, and upper/lowercase letters to toggle warning lights).
+- Hardware contract for warning inputs: D6 is an active-low kill-switch sense
+  input with `INPUT_PULLUP` enabled, so wire an isolated kill-switch contact from
+  D6 to ground. A3 is the coolant sender input, calibrated in
+  `telemetry/include/sensors.hpp` for a 0.5-4.5 V linear automotive sender.
 
 Build & upload with [PlatformIO](https://platformio.org/):
 
@@ -74,9 +80,10 @@ pio device monitor     # optional serial monitor
 
 An LVGL-based UI for the 7" ESP32-S3 touch display. It listens on serial for the
 telemetry unit's command protocol and updates on-screen gauges, bars, and warning
-indicators (kill switch, over-temp, stall, low battery). Open `dashboard.ino` in
-the Arduino IDE with the vendored `libraries/` on the library path, select the
-ESP32-S3 board, and flash.
+indicators (kill switch, coolant cold/hot, stall, low battery). HEAT is blue
+while coolant is below the warm operating band and red when above the over-temp
+band. Open `dashboard.ino` in the Arduino IDE with the vendored `libraries/` on
+the library path, select the ESP32-S3 board, and flash.
 
 ### GNSS logger (`GNSS/`)
 

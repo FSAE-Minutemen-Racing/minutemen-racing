@@ -23,6 +23,10 @@ static bool killLightOn = false;
 static bool stallLightOn = false;
 static bool battLightOn = false;
 static bool heatLightOn = false;
+static uint32_t killLightColor = 0;
+static uint32_t stallLightColor = 0;
+static uint32_t battLightColor = 0;
+static uint32_t heatLightColor = 0;
 
 // Lit: bright pill with white text. Off: dark pill with dim text.
 static void setWarningLight(lv_obj_t *light, bool on, uint32_t color)
@@ -31,13 +35,14 @@ static void setWarningLight(lv_obj_t *light, bool on, uint32_t color)
     lv_obj_set_style_text_color(light, lv_color_hex(on ? 0xFFFFFF : 0x505050), LV_PART_MAIN | LV_STATE_DEFAULT);
 }
 
-static void setWarningLightIfChanged(lv_obj_t *light, bool *cached, bool on, uint32_t color)
+static void setWarningLightIfChanged(lv_obj_t *light, bool *cached, uint32_t *cachedColor, bool on, uint32_t color)
 {
-    if (*cached == on) {
+    if (*cached == on && (!on || *cachedColor == color)) {
         return;
     }
 
     *cached = on;
+    *cachedColor = color;
     setWarningLight(light, on, color);
 }
 
@@ -80,31 +85,34 @@ static void processDashCommand(char command, const char *value)
 
         // Warning Lights (off/on)
         case 'k':
-            setWarningLightIfChanged(ui_kill, &killLightOn, false, 0xFF0000);
+            setWarningLightIfChanged(ui_kill, &killLightOn, &killLightColor, false, 0xFF0000);
             break;
         case 'K':
-            setWarningLightIfChanged(ui_kill, &killLightOn, true, 0xFF0000);
+            setWarningLightIfChanged(ui_kill, &killLightOn, &killLightColor, true, 0xFF0000);
             break;
 
         case 'b':
-            setWarningLightIfChanged(ui_batt, &battLightOn, false, 0xFF8A00);
+            setWarningLightIfChanged(ui_batt, &battLightOn, &battLightColor, false, 0xFF8A00);
             break;
         case 'B':
-            setWarningLightIfChanged(ui_batt, &battLightOn, true, 0xFF8A00);
+            setWarningLightIfChanged(ui_batt, &battLightOn, &battLightColor, true, 0xFF8A00);
             break;
 
         case 'x':
-            setWarningLightIfChanged(ui_stall, &stallLightOn, false, 0xFF0000);
+            setWarningLightIfChanged(ui_stall, &stallLightOn, &stallLightColor, false, 0xFF0000);
             break;
         case 'X':
-            setWarningLightIfChanged(ui_stall, &stallLightOn, true, 0xFF0000);
+            setWarningLightIfChanged(ui_stall, &stallLightOn, &stallLightColor, true, 0xFF0000);
             break;
 
         case 'h':
-            setWarningLightIfChanged(ui_heat, &heatLightOn, false, 0xFF8A00);
+            setWarningLightIfChanged(ui_heat, &heatLightOn, &heatLightColor, false, 0xFF0000);
             break;
         case 'H':
-            setWarningLightIfChanged(ui_heat, &heatLightOn, true, 0xFF8A00);
+            setWarningLightIfChanged(ui_heat, &heatLightOn, &heatLightColor, true, 0xFF0000);
+            break;
+        case 'L':
+            setWarningLightIfChanged(ui_heat, &heatLightOn, &heatLightColor, true, 0x4DB8FF);
             break;
 
         default:
