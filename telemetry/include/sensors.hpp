@@ -106,19 +106,22 @@ static unsigned long shiftStartMs = 0;
 int senseGear()
 {
     const unsigned long now = millis();
+    const int neutralLevel = digitalRead(neutral_pin);
+    const int gearUpLevel = digitalRead(gear_up_pin);
+    const int gearDownLevel = digitalRead(gear_down_pin);
 
     // ── Neutral sensor ────────────────────────────────────────────────────
     // Neutral sits between 1st and 2nd (1-N-2-3-4-5-6 sequential box, 2004
     // Yamaha R6), so it is tracked as its own state: down goes to 1st, up
     // goes to 2nd.
-    if (!shifting && digitalRead(neutral_pin) == LOW)
+    if (!shifting && neutralLevel == LOW)
     {
         inNeutral = true;
         return 0;
     }
 
     // ── Both paddles LOW → invalid / ignition off ─────────────────────────
-    if (digitalRead(gear_up_pin) == LOW && digitalRead(gear_down_pin) == LOW)
+    if (gearUpLevel == LOW && gearDownLevel == LOW)
     {
         shifting = false;
         waitingForRelease = false;
@@ -126,7 +129,7 @@ int senseGear()
     }
 
     // ── Both paddles released → stroke complete OR release after timeout ───
-    if (digitalRead(gear_up_pin) == HIGH && digitalRead(gear_down_pin) == HIGH)
+    if (gearUpLevel == HIGH && gearDownLevel == HIGH)
     {
         shifting = false;
         waitingForRelease = false; // ← also clears the timeout latch
@@ -141,7 +144,7 @@ int senseGear()
 
     // ── Up-shift ──────────────────────────────────────────────────────────
     if (!shifting && !waitingForRelease && // ← guard added
-        digitalRead(gear_up_pin) == LOW && (inNeutral || currentGear < 6))
+        gearUpLevel == LOW && (inNeutral || currentGear < 6))
     {
         shifting = true;
         shiftStartMs = now;
@@ -159,7 +162,7 @@ int senseGear()
 
     // ── Down-shift ────────────────────────────────────────────────────────
     if (!shifting && !waitingForRelease && // ← guard added
-        digitalRead(gear_down_pin) == LOW && (inNeutral || currentGear > 1))
+        gearDownLevel == LOW && (inNeutral || currentGear > 1))
     {
         shifting = true;
         shiftStartMs = now;
@@ -189,6 +192,14 @@ int senseGear()
 // getSpeed() so a calibration edit happens in one place (top of file).
 static const double GEARBOX_RATIOS[6] = {RATIO_1, RATIO_2, RATIO_3,
                                          RATIO_4, RATIO_5, RATIO_6};
+static const double SPEED_MPH_PER_RPM[6] = {
+    TIRE_CIRCUMFERENCE_IN / (PRIMARY_RATIO * RATIO_1 * FINAL_DRIVE_RATIO * 1056.0),
+    TIRE_CIRCUMFERENCE_IN / (PRIMARY_RATIO * RATIO_2 * FINAL_DRIVE_RATIO * 1056.0),
+    TIRE_CIRCUMFERENCE_IN / (PRIMARY_RATIO * RATIO_3 * FINAL_DRIVE_RATIO * 1056.0),
+    TIRE_CIRCUMFERENCE_IN / (PRIMARY_RATIO * RATIO_4 * FINAL_DRIVE_RATIO * 1056.0),
+    TIRE_CIRCUMFERENCE_IN / (PRIMARY_RATIO * RATIO_5 * FINAL_DRIVE_RATIO * 1056.0),
+    TIRE_CIRCUMFERENCE_IN / (PRIMARY_RATIO * RATIO_6 * FINAL_DRIVE_RATIO * 1056.0),
+};
 
 // Engine RPM per mph of ground speed in a given gear (1 mph = 1056 in/min).
 #define RPM_PER_MPH(gearboxRatio) \
@@ -278,47 +289,21 @@ void crossCheckGear(int rpm, double speedMph)
     }
 }
 
+double getSpeed(int gear, int rpm)
+{
+    if (gear == 0)
+        return 0.0;
+
+    if (gear < 1 || gear > 6)
+        return -0.5;
+
+    // mph = engine rev/min × precomputed per-gear drivetrain conversion.
+    return rpm * SPEED_MPH_PER_RPM[gear - 1];
+}
+
 double getSpeed(int gear)
 {
-    double gearRatio;
-
-    switch (gear)
-    {
-
-    case 0:
-        return 0.001;
-
-    case 1:
-        gearRatio = RATIO_1;
-        break;
-
-    case 2:
-        gearRatio = RATIO_2;
-        break;
-
-    case 3:
-        gearRatio = RATIO_3;
-        break;
-
-    case 4:
-        gearRatio = RATIO_4;
-        break;
-
-    case 5:
-        gearRatio = RATIO_5;
-        break;
-
-    case 6:
-        gearRatio = RATIO_6;
-        break;
-
-    default:
-        return -0.5;
-    }
-
-    // mph = engine rev/min ÷ total reduction × in/wheel-rev ÷ 1056 in/min-per-mph
-    return readSensors(RPM) * TIRE_CIRCUMFERENCE_IN /
-           (PRIMARY_RATIO * gearRatio * FINAL_DRIVE_RATIO * 1056.0);
+    return getSpeed(gear, readSensors(RPM));
 }
 
 float getBatteryVoltage()

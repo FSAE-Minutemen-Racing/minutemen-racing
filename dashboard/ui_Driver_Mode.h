@@ -33,7 +33,7 @@ extern lv_obj_t * ui_batt;
 extern lv_obj_t * ui_heat;
 
 // Updates the RPM readout and the shift indicator (bar fill, zone color,
-// and the flashing SHIFT overlay once past the shift point).
+// and the flashing bar once past the shift point).
 void ui_set_rpm(int rpm);
 
 #ifdef __cplusplus
