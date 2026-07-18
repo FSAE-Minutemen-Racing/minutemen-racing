@@ -2,7 +2,13 @@
 #ifndef SCREEN_CONTROL_HPP
 #define SCREEN_CONTROL_HPP
 
-#define SCREEN_UPDATE_INTERVAL 200
+#include <stdarg.h>
+#include <stdio.h>
+
+#define DASHBOARD_SERIAL_BAUD 115200
+#define DASH_FAST_UPDATE_INTERVAL_MS 50
+#define DASH_SLOW_UPDATE_INTERVAL_MS 500
+#define DASH_RESEND_INTERVAL_MS 1000
 
 // Battery warning hysteresis band: on below 12.0 V, off above 12.4 V,
 // so noise around a single threshold can't chatter the BATT light.
@@ -20,75 +26,117 @@ enum Warnings
 
 bool warning_state[4] = {false, false, false, false};
 
-void warning_lights(int warning, bool state)
+static size_t appendToDashboardTx(char *tx, size_t pos, size_t txSize, const char *fmt, ...)
+{
+    if (pos >= txSize)
+        return pos;
+
+    va_list args;
+    va_start(args, fmt);
+    int written = vsnprintf(tx + pos, txSize - pos, fmt, args);
+    va_end(args);
+
+    if (written <= 0)
+        return pos;
+
+    size_t available = txSize - pos;
+    if ((size_t)written >= available)
+        return txSize;
+
+    return pos + (size_t)written;
+}
+
+static char warningCommand(int warning, bool state)
 {
     switch (warning)
     {
-
     case KILL:
-        if (state)
-            Serial1.println('K');
-        else
-            Serial1.println('k');
-        break;
-
+        return state ? 'K' : 'k';
     case HEAT:
-        if (state)
-            Serial1.println('H');
-        else
-            Serial1.println('h');
-        break;
-
+        return state ? 'H' : 'h';
     case STALL:
-        if (state)
-            Serial1.println('X');
-        else
-            Serial1.println('x');
-        break;
-
+        return state ? 'X' : 'x';
     case BATT:
-        if (state)
-            Serial1.println('B');
-        else
-            Serial1.println('b');
-        break;
+        return state ? 'B' : 'b';
+    default:
+        return '\0';
     }
+}
+
+void warning_lights(int warning, bool state)
+{
+    char command = warningCommand(warning, state);
+    if (command)
+        Serial1.println(command);
+}
+
+static size_t appendGear(char *tx, size_t pos, size_t txSize, int gear)
+{
+    if (gear > 0 and gear <= 6)
+    {
+        return appendToDashboardTx(tx, pos, txSize, "G%d\n", gear);
+    }
+    else if (gear == 0)
+    {
+        return appendToDashboardTx(tx, pos, txSize, "GN\n");
+    }
+
+    return pos;
 }
 
 void changeGear(int gear)
 {
-    Serial1.print('G');
-
-    if (gear > 0 and gear <= 6)
-    {
-        Serial1.println(gear);
-    }
-    else if (gear == 0)
-    {
-        Serial1.println('N');
-    }
+    char tx[8];
+    size_t pos = appendGear(tx, 0, sizeof(tx), gear);
+    if (pos > 0 && pos < sizeof(tx))
+        Serial1.write((const uint8_t *)tx, pos);
 }
 
-void updateDashboard(int gear, double speed)
+void updateDashboard(int gear, double speed, int rpm)
 {
-    static unsigned long lastUpdate = 0;
+    static unsigned long lastFastUpdate = 0;
+    static unsigned long lastSlowUpdate = 0;
+    static unsigned long lastResend = 0;
+    static int lastGear = -1000;
+    static int lastRpm = -1;
+    static int lastSpeedMph = -1000;
+    static int lastVoltageTenths = -1;
+    static bool lastWarningState[4] = {false, false, false, false};
+    static bool warningStateInitialized = false;
+
     unsigned long now = millis();
+    bool resend = now - lastResend >= DASH_RESEND_INTERVAL_MS;
 
-    if (now - lastUpdate >= SCREEN_UPDATE_INTERVAL)
+    char tx[128];
+    size_t pos = 0;
+
+    if (now - lastFastUpdate >= DASH_FAST_UPDATE_INTERVAL_MS || resend)
     {
-        lastUpdate = now;
+        lastFastUpdate = now;
 
-        // Gear
-        changeGear(gear);
+        if (gear != lastGear || resend)
+        {
+            pos = appendGear(tx, pos, sizeof(tx), gear);
+            lastGear = gear;
+        }
 
-        // RPM
-        Serial1.print('R');
-        Serial1.println(readSensors(RPM));
+        if (rpm != lastRpm || resend)
+        {
+            pos = appendToDashboardTx(tx, pos, sizeof(tx), "R%d\n", rpm);
+            lastRpm = rpm;
+        }
 
-        // Speed
-        Serial1.print('S');
-        Serial1.println(speed);
+        int speedMph = speed > 0.0 ? (int)(speed + 0.5) : 0;
+        if (speedMph != lastSpeedMph || resend)
+        {
+            pos = appendToDashboardTx(tx, pos, sizeof(tx), "S%d\n", speedMph);
+            lastSpeedMph = speedMph;
+        }
+    }
 
+    if (now - lastSlowUpdate >= DASH_SLOW_UPDATE_INTERVAL_MS || resend)
+    {
+        lastSlowUpdate = now;
         // Battery voltage and BATT light
         float voltage = getBatteryVoltage();
         if (voltage < BATT_WARN_ON_VOLTAGE)
@@ -99,16 +147,34 @@ void updateDashboard(int gear, double speed)
         {
             warning_state[BATT] = false;
         }
-        Serial1.print("V");
-        Serial1.println(voltage);
 
-        // Resend every warning light state each cycle so a dropped byte
-        // or a display reboot can't leave a light stale
+        int voltageTenths = voltage > 0.0f ? (int)(voltage * 10.0f + 0.5f) : 0;
+        if (voltageTenths != lastVoltageTenths || resend)
+        {
+            pos = appendToDashboardTx(tx, pos, sizeof(tx), "V%d.%d\n", voltageTenths / 10, voltageTenths % 10);
+            lastVoltageTenths = voltageTenths;
+        }
+
+        // Resend periodically so a dropped byte or display reboot can't
+        // leave a light stale, but avoid repeating unchanged state every tick.
         for (int warning = KILL; warning <= BATT; warning++)
         {
-            warning_lights(warning, warning_state[warning]);
+            if (!warningStateInitialized || warning_state[warning] != lastWarningState[warning] || resend)
+            {
+                char command = warningCommand(warning, warning_state[warning]);
+                if (command)
+                    pos = appendToDashboardTx(tx, pos, sizeof(tx), "%c\n", command);
+                lastWarningState[warning] = warning_state[warning];
+            }
         }
+        warningStateInitialized = true;
     }
+
+    if (pos > 0 && pos < sizeof(tx))
+        Serial1.write((const uint8_t *)tx, pos);
+
+    if (resend)
+        lastResend = now;
 }
 
 #endif

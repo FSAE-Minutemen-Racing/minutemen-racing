@@ -9,7 +9,7 @@ double speed;
 
 void setup()
 {
-    Serial1.begin(9600);
+    Serial1.begin(DASHBOARD_SERIAL_BAUD);
 
     initServer();
     initSensors();
@@ -20,7 +20,15 @@ void loop()
 {
     pollGPS();
     runServer();
+
+    const int rpm = readSensors(RPM);
+
+    // Once per fresh GPS fix, sanity-check the dead-reckoned gear against
+    // the RPM-to-ground-speed ratio (reading mph() clears the updated flag)
+    if (gps.speed.isUpdated() && gps.speed.isValid())
+        crossCheckGear(rpm, gps.speed.mph());
+
     gear = senseGear();
-    speed = getSpeed(gear);
-    updateDashboard(gear, speed);
+    speed = getSpeed(gear, rpm);
+    updateDashboard(gear, speed, rpm);
 }

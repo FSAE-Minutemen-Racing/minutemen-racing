@@ -4,6 +4,8 @@
 
 #include <Wire.h>
 #include <TinyGPSPlus.h>
+#include <math.h>
+#include <stdio.h>
 
 // GNSS 15 Click (ST Teseo-VIC3DA) in I2C slave mode.
 // Uses the Qwiic connector (Wire1, 3.3 V) — the A4/A5 bus is unusable
@@ -14,7 +16,7 @@
 
 // Bytes per I2C read and max reads per poll (bounds time spent per loop)
 #define GPS_CHUNK_SIZE 32
-#define GPS_MAX_CHUNKS 8
+#define GPS_MAX_CHUNKS 2
 
 TinyGPSPlus gps;
 
@@ -68,6 +70,49 @@ String getGPSData()
     output += ",";
     output += String(gps.location.lng(), 6);
     return output;
+}
+
+void formatGPSData(char *output, size_t outputSize)
+{
+    if (!gps.location.isValid())
+    {
+        snprintf(output, outputSize, "INVALID,INVALID");
+        return;
+    }
+
+    if (gps.location.age() > 5000)
+    {
+        snprintf(output, outputSize, "STALE,STALE");
+        return;
+    }
+
+    double lat = gps.location.lat();
+    double lng = gps.location.lng();
+    bool latNegative = lat < 0.0;
+    bool lngNegative = lng < 0.0;
+
+    lat = fabs(lat);
+    lng = fabs(lng);
+
+    long latWhole = (long)lat;
+    long lngWhole = (long)lng;
+    long latFrac = (long)((lat - latWhole) * 1000000.0 + 0.5);
+    long lngFrac = (long)((lng - lngWhole) * 1000000.0 + 0.5);
+
+    if (latFrac >= 1000000L)
+    {
+        latWhole++;
+        latFrac -= 1000000L;
+    }
+    if (lngFrac >= 1000000L)
+    {
+        lngWhole++;
+        lngFrac -= 1000000L;
+    }
+
+    snprintf(output, outputSize, "%s%ld.%06ld,%s%ld.%06ld",
+             latNegative ? "-" : "", latWhole, latFrac,
+             lngNegative ? "-" : "", lngWhole, lngFrac);
 }
 
 #endif

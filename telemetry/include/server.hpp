@@ -3,6 +3,8 @@
 #define SERVER_HPP
 
 #include <WiFiS3.h>
+#include <stdio.h>
+#include <string.h>
 #include "gps.hpp"
 
 const char ssid[] = "minutemen-racing";
@@ -21,39 +23,46 @@ void initServer()
 }
 
 // The whole response goes out as one write: each print() is a separate
-// round-trip to the ESP32-S3 co-processor, and the ~12 of them previously
-// dominated the handler's time budget.
-static void sendResponse(WiFiClient &client, const String &request)
+// round-trip to the ESP32-S3 co-processor, and repeated String growth can
+// fragment heap during long browser polling sessions.
+static void sendResponse(WiFiClient &client, const char *request)
 {
-    String response;
+    char response[224];
+    int responseLen = 0;
 
-    if (request.indexOf("GET /data") >= 0)
+    if (strstr(request, "GET /data") != NULL)
     {
-        response = "HTTP/1.1 200 OK\r\n"
-                   "Content-type:text/plain\r\n"
-                   "Access-Control-Allow-Origin: *\r\n"
-                   "Connection: close\r\n"
-                   "\r\n";
-        response += readSensors(RPM);
-        response += ",";
-        response += readSensors(AFR);
-        response += ",";
-        response += readSensors(TPS);
-        response += ",";
-        response += readSensors(MAP);
-        response += ",";
-        response += getGPSData();
+        char gpsData[36];
+        formatGPSData(gpsData, sizeof(gpsData));
+        responseLen = snprintf(response, sizeof(response),
+                               "HTTP/1.1 200 OK\r\n"
+                               "Content-type:text/plain\r\n"
+                               "Access-Control-Allow-Origin: *\r\n"
+                               "Connection: close\r\n"
+                               "\r\n"
+                               "%d,%d,%d,%d,%s",
+                               readSensors(RPM),
+                               readSensors(AFR),
+                               readSensors(TPS),
+                               readSensors(MAP),
+                               gpsData);
     }
     else
     {
         // Answer unknown paths (browser favicon probes, "/") so the
         // client closes instead of waiting out its own timeout
-        response = "HTTP/1.1 404 Not Found\r\n"
-                   "Connection: close\r\n"
-                   "\r\n";
+        responseLen = snprintf(response, sizeof(response),
+                               "HTTP/1.1 404 Not Found\r\n"
+                               "Connection: close\r\n"
+                               "\r\n");
     }
 
-    client.print(response);
+    if (responseLen > 0)
+    {
+        if ((size_t)responseLen >= sizeof(response))
+            responseLen = sizeof(response) - 1;
+        client.write((const uint8_t *)response, (size_t)responseLen);
+    }
 }
 
 // Non-blocking; call every loop(). One client is handled at a time and its
@@ -63,7 +72,8 @@ static void sendResponse(WiFiClient &client, const String &request)
 void runServer()
 {
     static WiFiClient client;
-    static String request;
+    static char request[SERVER_MAX_REQUEST_LEN + 1];
+    static size_t requestLen;
     static unsigned long acceptMs;
 
     if (!client)
@@ -72,7 +82,8 @@ void runServer()
         if (!client)
             return;
         acceptMs = millis();
-        request = "";
+        requestLen = 0;
+        request[0] = '\0';
     }
 
     // Same drop semantics as the old blocking read (issue #3): a slow,
@@ -90,16 +101,20 @@ void runServer()
         char c = client.read();
         if (c == '\n')
         {
+            request[requestLen] = '\0';
             sendResponse(client, request);
             client.stop();
             return;
         }
-        if (request.length() >= SERVER_MAX_REQUEST_LEN)
+        if (c == '\r')
+            continue;
+
+        if (requestLen >= SERVER_MAX_REQUEST_LEN)
         {
             client.stop(); // oversized request line — drop unanswered
             return;
         }
-        request += c;
+        request[requestLen++] = c;
     }
 }
 
