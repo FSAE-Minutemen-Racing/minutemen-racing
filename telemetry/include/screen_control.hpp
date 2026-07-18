@@ -177,29 +177,4 @@ void updateDashboard(int gear, double speed, int rpm)
         lastResend = now;
 }
 
-unsigned int laptimer = 0;
-
-void incrementLaptimer()
-{
-    static unsigned long lastTick = 0;
-    unsigned long now = millis();
-
-    if (now - lastTick >= 1000)
-    {
-        lastTick = now;
-
-        laptimer++;
-
-        int seconds = laptimer % 60;
-        int minutes = (laptimer / 60) % 60;
-        int hours = (laptimer / 3600) % 24;
-
-        char laptimerString[9];
-        snprintf(laptimerString, sizeof(laptimerString), "%02d:%02d:%02d", hours, minutes, seconds);
-
-        Serial1.print('L');
-        Serial1.println(laptimerString);
-    }
-}
-
 #endif

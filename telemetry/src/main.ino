@@ -20,7 +20,6 @@ void loop()
 {
     pollGPS();
     runServer();
-    incrementLaptimer();
 
     const int rpm = readSensors(RPM);
 
