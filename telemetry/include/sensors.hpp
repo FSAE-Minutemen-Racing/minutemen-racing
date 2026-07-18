@@ -11,10 +11,9 @@
 #define RATIO_5 1.190       // 25/21
 #define RATIO_6 1.083       // 26/24
 
-// TODO(team): placeholders — measure MR19's actual sprockets and tire rolling
-// circumference; displayed speed is only correct once these are confirmed.
-#define FINAL_DRIVE_RATIO 3.000    // stock R6 48/16; MR19 sprockets unconfirmed
-#define TIRE_CIRCUMFERENCE_IN 56.5 // ~18 in OD tire; unconfirmed
+// MR19 drivetrain, measured on-car 2026-07-18.
+#define FINAL_DRIVE_RATIO 3.48     // measured MR19 sprockets
+#define TIRE_CIRCUMFERENCE_IN 64.4 // measured 20.5 in OD tire × pi
 
 volatile unsigned long lastPulseTime = 0;
 volatile unsigned long pulseInterval = 0;
@@ -192,9 +191,6 @@ static const double GEARBOX_RATIOS[6] = {RATIO_1, RATIO_2, RATIO_3,
                                          RATIO_4, RATIO_5, RATIO_6};
 
 // Engine RPM per mph of ground speed in a given gear (1 mph = 1056 in/min).
-// While FINAL_DRIVE_RATIO / TIRE_CIRCUMFERENCE_IN are uncalibrated (TODO at
-// top of file), no gear falls inside GEAR_CHECK_TOLERANCE and the
-// cross-check never resyncs (fails safe).
 #define RPM_PER_MPH(gearboxRatio) \
     (PRIMARY_RATIO * (gearboxRatio) * FINAL_DRIVE_RATIO * 1056.0 / TIRE_CIRCUMFERENCE_IN)
 
@@ -203,8 +199,7 @@ static const double GEARBOX_RATIOS[6] = {RATIO_1, RATIO_2, RATIO_3,
 #define GEAR_CHECK_AGREE_FIXES 3      // consecutive GPS fixes (~1/s) before resync
 
 // Gear implied by the observed RPM/speed ratio, or 0 if no gear is within
-// tolerance (clutch in, mid-shift, coasting in neutral, or uncalibrated
-// drivetrain constants).
+// tolerance (clutch in, mid-shift, or coasting in neutral).
 int gearFromRatio(int rpm, double speedMph)
 {
     const double observed = rpm / speedMph;
