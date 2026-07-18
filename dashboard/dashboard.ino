@@ -9,6 +9,13 @@
 using namespace esp_panel::drivers;
 using namespace esp_panel::board;
 
+// Lit: bright pill with white text. Off: dark pill with dim text.
+static void setWarningLight(lv_obj_t *light, bool on, uint32_t color)
+{
+    lv_obj_set_style_bg_color(light, lv_color_hex(on ? color : 0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(light, lv_color_hex(on ? 0xFFFFFF : 0x505050), LV_PART_MAIN | LV_STATE_DEFAULT);
+}
+
 void setup()
 {
     Serial.begin(9600);
@@ -63,19 +70,10 @@ void loop()
                 lv_label_set_text(ui_gear, value.c_str());
                 break;
 
-            // Laptimer
-            case 'L':
-                lv_label_set_text(ui_laptimer, value.c_str());
+            // RPM drives the readout and the shift indicator
+            case 'R':
+                ui_set_rpm(value.toInt());
                 break;
-
-            // Upper Gauges
-            case 'R': {
-                lv_label_set_text(ui_rpm, value.c_str());
-                int rpm_val = value.toInt();
-                lv_slider_set_value(ui_rpmbar, (rpm_val * 100) / 16000, LV_ANIM_ON);
-                lv_event_send(ui_rpmbar, LV_EVENT_VALUE_CHANGED, NULL);
-                break;
-            }
 
             case 'S':
                 lv_label_set_text(ui_speed, value.c_str());
@@ -85,54 +83,37 @@ void loop()
                 lv_label_set_text(ui_coolant, value.c_str());
                 break;
 
-            // Lower Gauges
             case 'V':
                 lv_label_set_text(ui_volts, value.c_str());
                 break;
 
-            case 'F':
-                lv_label_set_text(ui_gforce, value.c_str());
-                break;
-
-            case 'N':
-                lv_label_set_text(ui_gps, value.c_str());
-                break;
-
-            case 'T': {
-                lv_label_set_text(ui_tps, value.c_str());
-                float tps_val = value.toFloat();
-                lv_slider_set_value(ui_tpsbar, (int)((tps_val - 0) * 100) / (100 - 0), LV_ANIM_ON);
-                lv_event_send(ui_tpsbar, LV_EVENT_VALUE_CHANGED, NULL);
-                break;
-            }
-
             // Warning Lights (off/on)
             case 'k':
-                lv_obj_set_style_bg_color(ui_kill, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+                setWarningLight(ui_kill, false, 0xFF0000);
                 break;
             case 'K':
-                lv_obj_set_style_bg_color(ui_kill, lv_color_hex(0xFF0000), LV_PART_MAIN | LV_STATE_DEFAULT);
+                setWarningLight(ui_kill, true, 0xFF0000);
                 break;
 
             case 'b':
-                lv_obj_set_style_bg_color(ui_batt, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+                setWarningLight(ui_batt, false, 0xFF8A00);
                 break;
             case 'B':
-                lv_obj_set_style_bg_color(ui_batt, lv_color_hex(0xFF8A00), LV_PART_MAIN | LV_STATE_DEFAULT);
+                setWarningLight(ui_batt, true, 0xFF8A00);
                 break;
 
             case 'x':
-                lv_obj_set_style_bg_color(ui_stall, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+                setWarningLight(ui_stall, false, 0xFF0000);
                 break;
             case 'X':
-                lv_obj_set_style_bg_color(ui_stall, lv_color_hex(0xFF0000), LV_PART_MAIN | LV_STATE_DEFAULT);
+                setWarningLight(ui_stall, true, 0xFF0000);
                 break;
 
             case 'h':
-                lv_obj_set_style_bg_color(ui_heat, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+                setWarningLight(ui_heat, false, 0xFF8A00);
                 break;
             case 'H':
-                lv_obj_set_style_bg_color(ui_heat, lv_color_hex(0xFF8A00), LV_PART_MAIN | LV_STATE_DEFAULT);
+                setWarningLight(ui_heat, true, 0xFF8A00);
                 break;
 
             default:
