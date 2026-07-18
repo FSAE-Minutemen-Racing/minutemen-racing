@@ -2,6 +2,8 @@
 #ifndef SENSORS_HPP
 #define SENSORS_HPP
 
+#include <math.h>
+
 // 2004 Yamaha YZF-R6 drivetrain, spec-sheet values (dimensionless reductions)
 #define PRIMARY_RATIO 1.955 // 86/44, crank -> clutch
 #define RATIO_1 2.846       // 37/13
@@ -21,6 +23,18 @@ volatile unsigned long pulseInterval = 0;
 const unsigned int gear_up_pin = 19;
 const unsigned int gear_down_pin = 8;
 const unsigned int neutral_pin = 4;
+const unsigned int kill_switch_pin = 6;
+
+// Coolant temperature sender on A3. Defaults target a 0.5-4.5 V linear
+// automotive sender; update these calibration values if the car uses a
+// different sensor.
+#define COOLANT_SENSOR_PIN A3
+#define COOLANT_ADC_MAX 1023.0f
+#define COOLANT_SENSOR_REF_VOLTAGE 5.0f
+#define COOLANT_SENSOR_MIN_VOLTAGE 0.5f
+#define COOLANT_SENSOR_MAX_VOLTAGE 4.5f
+#define COOLANT_SENSOR_MIN_TEMP_F -40.0f
+#define COOLANT_SENSOR_MAX_TEMP_F 300.0f
 
 void pulseISR()
 {
@@ -50,6 +64,10 @@ void initSensors()
 
     // Neutral
     pinMode(neutral_pin, INPUT_PULLUP);
+
+    // Kill switch sense. Wire an isolated switch contact from D6 to ground;
+    // INPUT_PULLUP makes LOW mean kill switch active.
+    pinMode(kill_switch_pin, INPUT_PULLUP);
 }
 
 int calculateRPM()
@@ -69,8 +87,42 @@ enum Sensors
     RPM, // Revolutions Per Minute
     AFR, // Air Fuel Ratio
     TPS, // Throttle Position Sensor
-    MAP  // Manifold Absolute Pressure
+    MAP, // Manifold Absolute Pressure
+    COOLANT_TEMP_F
 };
+
+float adcToCoolantTempF(float adc)
+{
+    float voltage = (adc / COOLANT_ADC_MAX) * COOLANT_SENSOR_REF_VOLTAGE;
+
+    if (voltage < COOLANT_SENSOR_MIN_VOLTAGE)
+        voltage = COOLANT_SENSOR_MIN_VOLTAGE;
+    else if (voltage > COOLANT_SENSOR_MAX_VOLTAGE)
+        voltage = COOLANT_SENSOR_MAX_VOLTAGE;
+
+    const float sensorSpan = COOLANT_SENSOR_MAX_VOLTAGE - COOLANT_SENSOR_MIN_VOLTAGE;
+    const float tempSpan = COOLANT_SENSOR_MAX_TEMP_F - COOLANT_SENSOR_MIN_TEMP_F;
+    return COOLANT_SENSOR_MIN_TEMP_F +
+           ((voltage - COOLANT_SENSOR_MIN_VOLTAGE) / sensorSpan) * tempSpan;
+}
+
+float getCoolantTempF()
+{
+    long sum = 0;
+
+    analogRead(COOLANT_SENSOR_PIN);
+    for (int i = 0; i < 5; i++)
+    {
+        sum += analogRead(COOLANT_SENSOR_PIN);
+    }
+
+    return adcToCoolantTempF(sum / 5.0f);
+}
+
+bool isKillSwitchActive()
+{
+    return digitalRead(kill_switch_pin) == LOW;
+}
 
 int readSensors(int sensor)
 {
@@ -87,6 +139,12 @@ int readSensors(int sensor)
 
     case MAP:
         return analogRead(A2);
+
+    case COOLANT_TEMP_F:
+    {
+        float temp = getCoolantTempF();
+        return temp >= 0.0f ? (int)(temp + 0.5f) : (int)(temp - 0.5f);
+    }
 
     default:
         return -1;

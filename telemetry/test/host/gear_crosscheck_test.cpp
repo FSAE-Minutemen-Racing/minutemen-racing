@@ -28,12 +28,13 @@ typedef unsigned char byte;
 static unsigned long fakeMillisNow = 0;
 static unsigned long fakeMicrosNow = 0;
 static int pinLevels[32]; // indexed by digital pin number, default LOW
+static int analogLevels[128];
 
 unsigned long millis() { return fakeMillisNow; }
 unsigned long micros() { return fakeMicrosNow; }
 void pinMode(unsigned int, int) {}
 int digitalRead(unsigned int pin) { return pinLevels[pin]; }
-int analogRead(int) { return 0; }
+int analogRead(int pin) { return analogLevels[pin]; }
 void attachInterrupt(unsigned int, void (*)(), int) {}
 
 #include "../../include/sensors.hpp"
@@ -79,6 +80,18 @@ static void settleAt(double mph)
 
 int main()
 {
+    // ── coolant sender calibration maps A3 voltage to degrees F ──────────
+    CHECK(fabs(adcToCoolantTempF(102.3f) - COOLANT_SENSOR_MIN_TEMP_F) < 0.25);
+    CHECK(fabs(adcToCoolantTempF(920.7f) - COOLANT_SENSOR_MAX_TEMP_F) < 0.25);
+    analogLevels[COOLANT_SENSOR_PIN] = 511;
+    CHECK(readSensors(COOLANT_TEMP_F) == 130);
+
+    // ── kill switch input is active-low on the pullup input ───────────────
+    pinLevels[kill_switch_pin] = LOW;
+    CHECK(isKillSwitchActive());
+    pinLevels[kill_switch_pin] = HIGH;
+    CHECK(!isKillSwitchActive());
+
     // ── gearFromRatio identifies every gear from a clean ratio ────────────
     for (int g = 1; g <= 6; g++)
         CHECK(gearFromRatio(rpmFor(g, 30.0), 30.0) == g);
