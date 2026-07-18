@@ -63,35 +63,6 @@ int calculateRPM()
     return (60000000UL / pulseInterval) / 4;
 }
 
-enum Sensors
-{
-    RPM, // Revolutions Per Minute
-    AFR, // Air Fuel Ratio
-    TPS, // Throttle Position Sensor
-    MAP  // Manifold Absolute Pressure
-};
-
-int readSensors(int sensor)
-{
-    switch (sensor)
-    {
-    case RPM:
-        return calculateRPM();
-
-    case AFR:
-        return analogRead(A0);
-
-    case TPS:
-        return analogRead(A1);
-
-    case MAP:
-        return analogRead(A2);
-
-    default:
-        return -1;
-    }
-}
-
 static const unsigned long SHIFT_TIMEOUT_MS = 300UL;
 
 // Dead-reckoned gear state. File-scope so crossCheckGear() can resync it
@@ -272,7 +243,7 @@ double getSpeed(int gear, int rpm)
 
 float getBatteryVoltage()
 {
-    // Throwaway read lets the ADC input settle after other channels.
+    // Throwaway read lets the ADC input settle before the averaged burst.
     analogRead(A4);
 
     long sum = 0;
