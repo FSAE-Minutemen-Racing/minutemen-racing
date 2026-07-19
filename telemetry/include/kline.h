@@ -23,6 +23,10 @@
 // Consecutive missed/invalid data responses before re-initializing
 #define K_LINE_MAX_MISSED_RESPONSES 5
 
+// Command bytes (each response frame echoes the command it answers)
+#define K_LINE_CMD_INIT 0xFE
+#define K_LINE_CMD_DATA 0x01
+
 SoftwareSerial klineSerial(K_LINE_RX_PIN, K_LINE_TX_PIN);
 #define K_LINE_SERIAL klineSerial
 
@@ -48,6 +52,7 @@ static unsigned long kTimer = 0;
 static byte kResponse[6];
 static byte kMissedResponses = 0;
 static bool kInitialized = false;
+static bool kPortFailed = false;
 
 bool kLineReady()
 {
@@ -56,7 +61,10 @@ bool kLineReady()
 
 void initKLine()
 {
-    K_LINE_SERIAL.begin(K_LINE_BAUD);
+    // begin() fails if the RX pin has no ICU interrupt channel or the
+    // timers/DMA it needs are taken; don't run the state machine against
+    // a port that can never receive.
+    kPortFailed = K_LINE_SERIAL.begin(K_LINE_BAUD) == 0;
     kTimer = millis();
     kState = KLineState::INIT_WAIT;
 }
@@ -90,6 +98,9 @@ static int readKLineResponse(unsigned long now)
 // after repeated failures.
 void updateKLine()
 {
+    if (kPortFailed)
+        return;
+
     unsigned long now = millis();
 
     switch (kState)
@@ -97,7 +108,7 @@ void updateKLine()
     case KLineState::INIT_WAIT:
         if (now - kTimer >= K_LINE_INIT_DELAY)
         {
-            sendKLineCommand(0xFE);
+            sendKLineCommand(K_LINE_CMD_INIT);
             kState = KLineState::INIT_CMD_SENT;
         }
         break;
@@ -106,7 +117,7 @@ void updateKLine()
         switch (readKLineResponse(now))
         {
         case 1:
-            if (kResponse[0] == 0xFE &&
+            if (kResponse[0] == K_LINE_CMD_INIT &&
                 kResponse[1] == 0x00 && kResponse[2] == 0x00 &&
                 kResponse[3] == 0x00 && kResponse[4] == 0x00 &&
                 kResponse[5] == 0x00)
@@ -141,7 +152,7 @@ void updateKLine()
     case KLineState::READY:
         if (now - kTimer >= K_LINE_POLL_INTERVAL)
         {
-            sendKLineCommand(0x01);
+            sendKLineCommand(K_LINE_CMD_DATA);
             kState = KLineState::REQ_CMD_SENT;
         }
         break;
@@ -150,8 +161,10 @@ void updateKLine()
         switch (readKLineResponse(now))
         {
         case 1:
-            // Payload checksum is mod-256
-            if ((byte)(kResponse[1] + kResponse[2] + kResponse[3] + kResponse[4]) == kResponse[5])
+            // Frame must echo the command; the mod-256 payload checksum
+            // alone would accept an all-zero frame from an idle line
+            if (kResponse[0] == K_LINE_CMD_DATA &&
+                (byte)(kResponse[1] + kResponse[2] + kResponse[3] + kResponse[4]) == kResponse[5])
             {
                 klineSpeed = kResponse[2];
                 klineCoolant = kResponse[4];
@@ -185,7 +198,7 @@ void updateKLine()
     case KLineState::RETRY_WAIT:
         if (now - kTimer >= K_LINE_RETRY_DELAY)
         {
-            sendKLineCommand(0xFE);
+            sendKLineCommand(K_LINE_CMD_INIT);
             kState = KLineState::INIT_CMD_SENT;
         }
         break;
