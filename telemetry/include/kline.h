@@ -5,8 +5,10 @@
 // Serial allocation (see #18): the dashboard owns Serial1, USB owns Serial,
 // and the WiFi co-processor owns Serial2, so the K-line transceiver gets a
 // software UART on otherwise-unused pins.
-#define K_LINE_RX_PIN 5
-#define K_LINE_TX_PIN 6
+// RX must be an ICU-IRQ-capable pin or SoftwareSerial::begin() fails and
+// never receives; D6 (P111, IRQ4) qualifies, D5 (P107) does not.
+#define K_LINE_RX_PIN 6
+#define K_LINE_TX_PIN 5
 
 // Standard diagnostic K-line rate -- confirm on the bench (#18).
 #define K_LINE_BAUD 10400
