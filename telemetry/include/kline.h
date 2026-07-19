@@ -1,6 +1,6 @@
 #pragma once
-#ifndef KLINE_HPP
-#define KLINE_HPP
+
+#include <string.h>
 
 #include <SoftwareSerial.h>
 

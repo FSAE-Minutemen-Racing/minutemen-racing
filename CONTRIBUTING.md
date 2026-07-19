@@ -112,8 +112,7 @@ Closes #3
 
 ### Definition of done
 
-- [ ] Builds for the affected target(s) (`telemetry` = UNO R4, `GNSS` = Teensy 4.1,
-      `dashboard` = ESP32).
+- [ ] Builds for the affected target(s) (`telemetry` = UNO R4, `dashboard` = ESP32).
 - [ ] Behavior verified (bench or on-car) and described in the PR.
 - [ ] No new dead/unreferenced code left behind.
 - [ ] Linked issue closed by the PR.
@@ -125,6 +124,5 @@ Closes #3
 | Directory    | Board             | Toolchain          |
 | ------------ | ----------------- | ------------------ |
 | `telemetry/` | Arduino UNO R4 WiFi | PlatformIO         |
-| `GNSS/`      | Teensy 4.1        | PlatformIO         |
 | `dashboard/` | ESP32 (LVGL)      | Arduino IDE / PIO  |
 | `web_site/`  | Browser           | static HTML/JS/CSS |

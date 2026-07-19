@@ -40,7 +40,6 @@ same live data over a WiFi access point that the **web_site** ground station pol
 | `telemetry/` | Main data-acquisition firmware. PlatformIO project targeting the **Arduino UNO R4 WiFi**. Reads sensors, hosts the WiFi telemetry server, and drives the dashboard. |
 | `dashboard/` | Driver-display firmware. Arduino sketch for a **Waveshare ESP32-S3-Touch-LCD-7** (800×480 RGB LCD) using **LVGL v8**. Renders gear, RPM, speed, throttle, voltage, and warning lights. UI generated with SquareLine Studio. |
 | `dashboard_pcb/` | KiCad PCB design (`mmr_pcb`) for the dashboard hardware, including Teensy footprint/symbol libraries and design backups. |
-| `GNSS/` | GPS + ECU-diagnostics firmware. PlatformIO project targeting a **Teensy 4.1**. Reads GPS (TinyGPSPlus), K-line ECU diagnostic codes, and analog sensors (AFR, RPM, TPS). |
 | `web_site/` | Browser-based ground-station dashboard. Polls the telemetry unit's `/data` endpoint for live gauges, a serial console, CSV data export, and a Leaflet GPS map. |
 | `libraries/` | Vendored Arduino libraries used by the dashboard build (`ESP32_Display_Panel`, `esp-lib-utils`, `ESP32_IO_Expander`, `lvgl`). |
 
@@ -77,16 +76,6 @@ telemetry unit's command protocol and updates on-screen gauges, bars, and warnin
 indicators (kill switch, over-temp, stall, low battery). Open `dashboard.ino` in
 the Arduino IDE with the vendored `libraries/` on the library path, select the
 ESP32-S3 board, and flash.
-
-### GNSS logger (`GNSS/`)
-
-A standalone Teensy 4.1 project for GPS logging and ECU K-line diagnostics. Build
-with PlatformIO:
-
-```bash
-cd GNSS
-pio run -t upload
-```
 
 ### Web ground station (`web_site/`)
 

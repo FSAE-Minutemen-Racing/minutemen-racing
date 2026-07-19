@@ -1,27 +1,31 @@
 #include <Arduino.h>
 #include "sensors.hpp"
-#include "server.hpp"
 #include "kline.h"
+#include "gps.hpp"
 #include "screen_control.hpp"
-
-int gear;
-double speed;
 
 void setup()
 {
-    Serial1.begin(9600);
+    Serial1.begin(DASHBOARD_SERIAL_BAUD);
 
-    initServer();
     initSensors();
     initKLine();
+    initGPS();
 }
 
 void loop()
 {
-    runServer();
     updateKLine();
-    incrementLaptimer();
-    gear = senseGear();
-    speed = getSpeed(gear);
-    updateDashboard(gear, speed);
+    pollGPS();
+
+    const int rpm = calculateRPM();
+
+    // Once per fresh GPS fix, sanity-check the dead-reckoned gear against
+    // the RPM-to-ground-speed ratio (reading mph() clears the updated flag)
+    if (gps.speed.isUpdated() && gps.speed.isValid())
+        crossCheckGear(rpm, gps.speed.mph());
+
+    const int gear = senseGear();
+    const double speed = getSpeed(gear, rpm);
+    updateDashboard(gear, speed, rpm);
 }
