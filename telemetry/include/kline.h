@@ -1,7 +1,5 @@
 #pragma once
 
-#include <string.h>
-
 #include <SoftwareSerial.h>
 
 // Serial allocation (see #18): the dashboard owns Serial1, USB owns Serial,
@@ -191,5 +189,3 @@ void updateKLine()
         break;
     }
 }
-
-#endif

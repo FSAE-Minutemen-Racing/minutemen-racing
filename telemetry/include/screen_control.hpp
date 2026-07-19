@@ -83,6 +83,7 @@ void updateDashboard(int gear, double speed, int rpm)
     static int lastRpm = -1;
     static int lastSpeedMph = -1000;
     static int lastVoltageTenths = -1;
+    static int lastCoolant = -1000;
     static bool lastWarningState[4] = {false, false, false, false};
     static bool warningStateInitialized = false;
 
@@ -116,16 +117,17 @@ void updateDashboard(int gear, double speed, int rpm)
         }
     }
 
-        // Coolant temperature from the ECU, once the K-line session is up
-        if (kLineReady())
-        {
-            Serial1.print('C');
-            Serial1.println(klineCoolant);
-        }
-
     if (now - lastSlowUpdate >= DASH_SLOW_UPDATE_INTERVAL_MS || resend)
     {
         lastSlowUpdate = now;
+
+        // Coolant temperature from the ECU, once the K-line session is up
+        if (kLineReady() && (klineCoolant != lastCoolant || resend))
+        {
+            pos = appendToDashboardTx(tx, pos, sizeof(tx), "C%d\n", klineCoolant);
+            lastCoolant = klineCoolant;
+        }
+
         // Battery voltage and BATT light
         float voltage = getBatteryVoltage();
         if (voltage < BATT_WARN_ON_VOLTAGE)
