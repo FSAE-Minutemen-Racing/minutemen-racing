@@ -32,8 +32,12 @@ extern lv_obj_t * ui_stall;
 extern lv_obj_t * ui_batt;
 extern lv_obj_t * ui_heat;
 
+// Updates the gear readout and selects the matching shift-light window.
+// Gear 0 is neutral; neutral and 6th gear disable the shift indicator.
+void ui_set_gear(int gear);
+
 // Updates the RPM readout and the shift indicator (bar fill, zone color,
-// and the flashing bar once past the shift point).
+// and the flashing bar once past the current gear's shift point).
 void ui_set_rpm(int rpm);
 
 #ifdef __cplusplus
