@@ -1,4 +1,4 @@
-# MR19-Code
+# MR-26-Code
 
 Embedded software, tooling, and hardware design for **MR19**, the Formula SAE car
 built by **Minutemen Racing** (UMass Amherst). This repository holds the on-car
