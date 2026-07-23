@@ -30,8 +30,7 @@ tools used to visualize and log vehicle data.
 
 The **telemetry** unit is the central data-acquisition computer. It reads the
 engine and powertrain sensors, computes derived values (speed, gear, lap time),
-drives the driver-facing **dashboard** display over a serial link, and serves the
-same live data over a WiFi access point that the **web_site** ground station polls.
+and drives the driver-facing **dashboard** display over a serial link.
 
 ## Repository Layout
 
@@ -47,7 +46,7 @@ same live data over a WiFi access point that the **web_site** ground station pol
 
 ### Telemetry unit (`telemetry/`)
 
-The on-car brain. Runs on an Arduino UNO R4 WiFi and:
+Runs on an Arduino UNO R4 WiFi and:
 
 - Measures **engine RPM** via an interrupt-driven CPS pulse counter.
 - Tracks **gear position** from up/down shift paddles and a neutral sensor, with
@@ -76,12 +75,6 @@ telemetry unit's command protocol and updates on-screen gauges, bars, and warnin
 indicators (kill switch, over-temp, stall, low battery). Open `dashboard.ino` in
 the Arduino IDE with the vendored `libraries/` on the library path, select the
 ESP32-S3 board, and flash.
-
-### Web ground station (`web_site/`)
-
-A static site (`index.html`, `main.js`, `style.css`) with a bundled copy of
-Leaflet. Connect to the telemetry unit's WiFi access point and open the page in a
-browser to see live gauges, log data, export CSV, and track the car on a map.
 
 ## License
 
