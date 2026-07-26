@@ -64,6 +64,44 @@ int calculateRPM()
 }
 
 static const unsigned long SHIFT_TIMEOUT_MS = 300UL;
+static const unsigned long GEAR_INPUT_DEBOUNCE_MS = 15UL;
+
+struct DebouncedGearInput
+{
+    int stableLevel;
+    int pendingLevel;
+    unsigned long pendingSinceMs;
+};
+
+static DebouncedGearInput gearUpInput = {HIGH, HIGH, 0};
+static DebouncedGearInput gearDownInput = {HIGH, HIGH, 0};
+static DebouncedGearInput neutralInput = {HIGH, HIGH, 0};
+
+static int readDebouncedGearInput(unsigned int pin,
+                                  DebouncedGearInput &input,
+                                  unsigned long now)
+{
+    const int rawLevel = digitalRead(pin);
+
+    if (rawLevel == input.stableLevel)
+    {
+        input.pendingLevel = rawLevel;
+        input.pendingSinceMs = now;
+        return input.stableLevel;
+    }
+
+    if (rawLevel != input.pendingLevel)
+    {
+        input.pendingLevel = rawLevel;
+        input.pendingSinceMs = now;
+        return input.stableLevel;
+    }
+
+    if (now - input.pendingSinceMs >= GEAR_INPUT_DEBOUNCE_MS)
+        input.stableLevel = rawLevel;
+
+    return input.stableLevel;
+}
 
 // Dead-reckoned gear state. File-scope so crossCheckGear() can resync it
 // when the drivetrain ratio proves it wrong (issue #8).
@@ -76,15 +114,16 @@ static unsigned long shiftStartMs = 0;
 int senseGear()
 {
     const unsigned long now = millis();
-    const int neutralLevel = digitalRead(neutral_pin);
-    const int gearUpLevel = digitalRead(gear_up_pin);
-    const int gearDownLevel = digitalRead(gear_down_pin);
+    const int neutralLevel = readDebouncedGearInput(neutral_pin, neutralInput, now);
+    const bool neutralSignalActive = neutralLevel == LOW;
+    const int gearUpLevel = readDebouncedGearInput(gear_up_pin, gearUpInput, now);
+    const int gearDownLevel = readDebouncedGearInput(gear_down_pin, gearDownInput, now);
 
     // ── Neutral sensor ────────────────────────────────────────────────────
     // Neutral sits between 1st and 2nd (1-N-2-3-4-5-6 sequential box, 2004
     // Yamaha R6), so it is tracked as its own state: down goes to 1st, up
     // goes to 2nd.
-    if (!shifting && neutralLevel == LOW)
+    if (!shifting && neutralSignalActive)
     {
         inNeutral = true;
         return 0;
@@ -95,7 +134,7 @@ int senseGear()
     {
         shifting = false;
         waitingForRelease = false;
-        return inNeutral ? 0 : currentGear;
+        return neutralSignalActive ? 0 : currentGear;
     }
 
     // ── Both paddles released → stroke complete, timeout latch cleared ────
@@ -136,7 +175,9 @@ int senseGear()
         }
     }
 
-    return inNeutral ? 0 : currentGear;
+    // `inNeutral` remembers how to interpret the first shift away from
+    // neutral. Only the live sensor signal is allowed to report neutral.
+    return neutralSignalActive ? 0 : currentGear;
 }
 
 // ── Gear plausibility cross-check (issue #8) ──────────────────────────────

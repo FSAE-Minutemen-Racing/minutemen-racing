@@ -60,10 +60,14 @@ static int rpmFor(int gear, double mph)
 // Reset the dead-reckoning state sensors.hpp tracks between scenarios.
 static void resetState(int gear)
 {
+    fakeMillisNow = 0;
     currentGear = gear;
     inNeutral = false;
     shifting = false;
     waitingForRelease = false;
+    gearUpInput = {HIGH, HIGH, 0};
+    gearDownInput = {HIGH, HIGH, 0};
+    neutralInput = {HIGH, HIGH, 0};
     pinLevels[neutral_pin] = HIGH;
     pinLevels[gear_up_pin] = HIGH;
     pinLevels[gear_down_pin] = HIGH;
@@ -79,6 +83,83 @@ static void settleAt(double mph)
 
 int main()
 {
+    // A brief LOW pulse is electrical noise, not an upshift.
+    resetState(3);
+    pinLevels[gear_up_pin] = LOW;
+    CHECK(senseGear() == 3);
+    fakeMillisNow += GEAR_INPUT_DEBOUNCE_MS - 1;
+    CHECK(senseGear() == 3);
+    pinLevels[gear_up_pin] = HIGH;
+    fakeMillisNow++;
+    CHECK(senseGear() == 3);
+
+    // The downshift input gets the same noise rejection.
+    resetState(4);
+    pinLevels[gear_down_pin] = LOW;
+    CHECK(senseGear() == 4);
+    fakeMillisNow += GEAR_INPUT_DEBOUNCE_MS - 1;
+    CHECK(senseGear() == 4);
+    pinLevels[gear_down_pin] = HIGH;
+    fakeMillisNow++;
+    CHECK(senseGear() == 4);
+
+    // A sustained LOW is accepted once and requires a debounced release
+    // before another shift can be counted.
+    resetState(3);
+    pinLevels[gear_up_pin] = LOW;
+    CHECK(senseGear() == 3);
+    fakeMillisNow += GEAR_INPUT_DEBOUNCE_MS;
+    CHECK(senseGear() == 4);
+    fakeMillisNow += SHIFT_TIMEOUT_MS;
+    CHECK(senseGear() == 4);
+    pinLevels[gear_up_pin] = HIGH;
+    CHECK(senseGear() == 4);
+    fakeMillisNow += GEAR_INPUT_DEBOUNCE_MS;
+    CHECK(senseGear() == 4);
+
+    // A brief neutral-switch glitch must not report or latch neutral.
+    resetState(3);
+    pinLevels[neutral_pin] = LOW;
+    CHECK(senseGear() == 3);
+    fakeMillisNow += GEAR_INPUT_DEBOUNCE_MS - 1;
+    CHECK(senseGear() == 3);
+    pinLevels[neutral_pin] = HIGH;
+    fakeMillisNow++;
+    CHECK(senseGear() == 3);
+    CHECK(!inNeutral);
+
+    // Neutral is reported only while its active-low signal is present.
+    resetState(1);
+    pinLevels[neutral_pin] = LOW;
+    CHECK(senseGear() == 1);
+    fakeMillisNow += GEAR_INPUT_DEBOUNCE_MS;
+    CHECK(senseGear() == 0);
+    CHECK(inNeutral);
+    pinLevels[neutral_pin] = HIGH;
+    CHECK(senseGear() == 0);
+    fakeMillisNow += GEAR_INPUT_DEBOUNCE_MS;
+    CHECK(senseGear() == 1);
+    CHECK(inNeutral);
+
+    // The remembered neutral state still identifies a subsequent upshift as
+    // neutral -> 2nd, even though the switch released before the stroke.
+    pinLevels[gear_up_pin] = LOW;
+    CHECK(senseGear() == 1);
+    fakeMillisNow += GEAR_INPUT_DEBOUNCE_MS;
+    CHECK(senseGear() == 2);
+    CHECK(!inNeutral);
+
+    // Invalid simultaneous paddle inputs must not preserve a stale neutral
+    // claim after the neutral signal disappears.
+    resetState(3);
+    inNeutral = true;
+    pinLevels[gear_up_pin] = LOW;
+    pinLevels[gear_down_pin] = LOW;
+    CHECK(senseGear() == 3);
+    fakeMillisNow += GEAR_INPUT_DEBOUNCE_MS;
+    CHECK(senseGear() == 3);
+    CHECK(inNeutral);
+
     // ── gearFromRatio identifies every gear from a clean ratio ────────────
     for (int g = 1; g <= 6; g++)
         CHECK(gearFromRatio(rpmFor(g, 30.0), 30.0) == g);
