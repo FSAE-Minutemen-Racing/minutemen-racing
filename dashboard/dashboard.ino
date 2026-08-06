@@ -58,7 +58,11 @@ static void processDashCommand(char command, const char *value)
     switch (command) {
         // Gear
         case 'G':
-            setLabelTextIfChanged(ui_gear, value);
+            if (value[0] == 'N' && value[1] == '\0') {
+                ui_set_gear(0);
+            } else if (value[0] >= '1' && value[0] <= '6' && value[1] == '\0') {
+                ui_set_gear(value[0] - '0');
+            }
             break;
 
         // RPM drives the readout and the shift indicator
